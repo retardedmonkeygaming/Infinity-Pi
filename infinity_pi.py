@@ -79,7 +79,6 @@ socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
 
 class InfinityPi_Emulator:
     def __init__(self):
-        # Thread safety lock to prevent USB engine/Web UI race conditions
         self.lock = threading.Lock()
         self.base = InfinityBase()
         
@@ -87,35 +86,30 @@ class InfinityPi_Emulator:
         self.base_path = os.path.join(script_dir, "bins")
         self.categories = ["Characters", "Playsets", "PowerDiscs", "Vehicles"]
         
-        # Virtual Slots (0-1: Chars, 2: Hex, 3-6: Discs)
         self.slots = {}
         for i in range(7):
             sid = 0x20 if i in [0,3,4] else 0x30 if i in [1,5,6] else 0x10
             self.slots[i] = {"name": "Empty", "uid": b"\x00"*7, "data": None, "sid": sid}
         
-        if not os.path.exists(self.base_path): 
-            os.makedirs(self.base_path, exist_ok=True)
-        for c in self.categories: 
-            os.makedirs(os.path.join(self.base_path, c), exist_ok=True)
+        if not os.path.exists(self.base_path): os.makedirs(self.base_path, exist_ok=True)
+        for c in self.categories: os.makedirs(os.path.join(self.base_path, c), exist_ok=True)
 
-    def log_to_web(self, tag, data):
-        msg = f"[{time.strftime('%H:%M:%S')}] [{tag}] {data.hex()}"
+    def log_to_web(self, tag, data_or_msg):
+        if isinstance(data_or_msg, (bytes, bytearray)):
+            msg = f"[{time.strftime('%H:%M:%S')}] [{tag}] {data_or_msg.hex()}"
+        else:
+            msg = f"[{time.strftime('%H:%M:%S')}] [{tag}] {data_or_msg}"
         socketio.emit('log_update', {'msg': msg}, namespace='/')
 
     def usb_engine(self):
-        # Open USB Gadget File Descriptor
         fd = os.open("/dev/hidg0", os.O_RDWR)
-        print("[*] USB Engine Started. Awaiting console connection...")
-        
         while True:
             try:
                 buf = os.read(fd, 32)
                 if not buf or len(buf) < 32: continue
 
                 if buf[0] == 0xff:
-                    # Sync lock while generating response to ensure slot data isn't modified mid-read
                     with self.lock:
-                        self.log_to_web("RECV_AUTH", buf)
                         command, sequence = buf[2], buf[3]
                         q_result = bytearray(32)
 
@@ -128,33 +122,31 @@ class InfinityPi_Emulator:
                             self.base.get_next_and_scramble(sequence, q_result)
                         elif command in [0x90, 0x92, 0x93, 0x95, 0x96, 0xB5]:
                             self.base.get_blank_response(sequence, q_result)
-                        elif command == 0xA1: # get_present_figures
+                        elif command == 0xA1: # Presence check
                             x = 3
                             for i in range(7):
-                                if self.slots[i]["data"]:
+                                if self.slots[i]["data"] is not None:
                                     q_result[x], q_result[x+1] = self.slots[i]["sid"] + i, 0x09
                                     x += 2
                             q_result[0], q_result[1], q_result[2] = 0xaa, x-2, sequence
                             q_result[x] = self.base.generate_checksum(q_result, x)
-                        elif command == 0xB4: # get_figure_identifier
+                        elif command == 0xB4: # UID check
                             order = buf[4]
                             q_result[0:4] = [0xaa, 0x09, sequence, 0x00]
-                            if order < 7 and self.slots[order]["data"]:
+                            if order < 7 and self.slots[order]["data"] is not None:
                                 q_result[4:11] = self.slots[order]["uid"]
                             q_result[11] = self.base.generate_checksum(q_result, 11)
-                        elif command == 0xA2: # query_block
+                        elif command == 0xA2: # Data Read
                             order, block = buf[4], buf[5]
                             file_block = 1 if block == 0 else (block * 4)
                             q_result[0:4] = [0xaa, 0x12, sequence, 0x00]
-                            if order < 7 and self.slots[order]["data"] and file_block < 20:
+                            if order < 7 and self.slots[order]["data"] is not None and file_block < 20:
                                 q_result[4:20] = self.slots[order]["data"][16*file_block : 16*file_block+16]
                             q_result[20] = self.base.generate_checksum(q_result, 20)
 
                         os.write(fd, q_result)
-                        self.log_to_web("SENT_AUTH", q_result)
             except Exception as e:
-                print(f"USB Error: {e}")
-                time.sleep(0.1)
+                time.sleep(0.01)
 
 emulator = InfinityPi_Emulator()
 
@@ -182,9 +174,9 @@ def web_place():
     try:
         with open(path, "rb") as f:
             raw = bytearray(f.read())
-            # Lock the slot update to prevent corruption if the console is reading mid-update
             with emulator.lock:
                 emulator.slots[s_idx].update({"name": d['filename'], "uid": raw[0:7], "data": raw})
+        emulator.log_to_web("SLOT_UPDATE", f"Placed {d['filename']} in Slot {s_idx}")
         return jsonify({"status": "ok"})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
@@ -194,6 +186,7 @@ def web_remove():
     s_idx = int(request.json['slot'])
     with emulator.lock:
         emulator.slots[s_idx].update({"name": "Empty", "uid": b"\x00"*7, "data": None})
+    emulator.log_to_web("SLOT_UPDATE", f"Cleared Slot {s_idx}")
     socketio.emit('slot_update', {'slot': s_idx, 'name': "Empty"})
     return jsonify({"status": "ok"})
 
@@ -202,11 +195,14 @@ def web_remove_all():
     with emulator.lock:
         for i in range(7):
             emulator.slots[i].update({"name": "Empty", "uid": b"\x00"*7, "data": None})
-            socketio.emit('slot_update', {'slot': i, 'name': "Empty"})
+    
+    # Emit outside the lock for better USB timing performance
+    for i in range(7):
+        socketio.emit('slot_update', {'slot': i, 'name': "Empty"})
+    
+    emulator.log_to_web("SLOT_UPDATE", "ALL SLOTS CLEARED")
     return jsonify({"status": "ok"})
 
 if __name__ == "__main__":
-    # Start USB Engine in background
     threading.Thread(target=emulator.usb_engine, daemon=True).start()
-    # Start Web Server
     socketio.run(app, host='0.0.0.0', port=80, allow_unsafe_werkzeug=True)
