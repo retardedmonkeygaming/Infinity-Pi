@@ -65,7 +65,7 @@ InfinityPi/
 Ensure your Pi is running Python 3 and install the core application requirements:
 
 ```bash
-sudo pip3 install flask flask-socketio RPi.GPIO
+sudo pip3 install flask flask-socketio RPi.GPIO --break-system-packages
 
 ```
 
@@ -103,7 +103,7 @@ sudo bash base_identity.sh
 Start the main emulation engine with root permissions:
 
 ```bash
-sudo python3 dire_pi.py
+sudo python3 infinity_pi.py
 
 ```
 
