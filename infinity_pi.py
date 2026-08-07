@@ -86,19 +86,19 @@ class InfinityPi_Emulator:
         self.base_path = os.path.join(script_dir, "bins")
         self.categories = ["Characters", "Playsets", "PowerDiscs", "Vehicles"]
         
-        # Hardware-Correct Slot Mapping (Standard 0x00-0x06 range)
-        # 0: Pad 1, 1: Pad 2, 2: Pad 3 (Hex)
-        # 3,4: Pad 1 Discs, 5,6: Pad 2 Discs
+        # SIDs: 0=Hex, 1=P1, 2=P2, 3..6=Discs
+        self.sids = [0x01, 0x02, 0x00, 0x03, 0x04, 0x05, 0x06]
         self.slots = {}
         for i in range(7):
-            self.slots[i] = {"name": "Empty", "uid": b"\x00"*7, "data": None, "sid": i}
+            self.slots[i] = {"name": "Empty", "uid": b"\x00"*7, "data": None, "sid": self.sids[i]}
         
-        # This map translates the Console's request index to our internal Slot ID
         self.active_map = [] 
 
-    def log_to_web(self, tag, msg):
-        log_msg = f"[{time.strftime('%H:%M:%S')}] [{tag}] {msg}"
-        socketio.emit('log_update', {'msg': log_msg}, namespace='/')
+    def log_to_web(self, tag, data):
+        # Full packet logging restored
+        hex_data = data.hex() if isinstance(data, (bytes, bytearray)) else str(data)
+        msg = f"[{time.strftime('%H:%M:%S')}] [{tag}] {hex_data}"
+        socketio.emit('log_update', {'msg': msg}, namespace='/')
 
     def usb_engine(self):
         fd = os.open("/dev/hidg0", os.O_RDWR)
@@ -117,44 +117,53 @@ class InfinityPi_Emulator:
                                               0x20, 0x32, 0x62, 0x36, 0x36, 0x4b, 0x34, 0x99, 0x67, 0x31, 0x93, 0x8c]
                         elif command == 0x81:
                             self.base.descramble_and_seed(buf, sequence, q_result)
+                            self.log_to_web("AUTH_SEED", buf[4:12])
                         elif command == 0x83:
                             self.base.get_next_and_scramble(sequence, q_result)
                         elif command in [0x90, 0x92, 0x93, 0x95, 0x96, 0xB5]:
                             self.base.get_blank_response(sequence, q_result)
                         
-                        elif command == 0xA1: # Presence check
-                            self.active_map = [] # Reset map
+                        elif command == 0xA1: # Presence
+                            self.active_map = []
                             x = 3
                             for i in range(7):
                                 if self.slots[i]["data"] is not None:
-                                    self.active_map.append(i) # Record that THIS slot is at THIS index
+                                    self.active_map.append(i)
                                     q_result[x] = self.slots[i]["sid"]
-                                    q_result[x+1] = 0x09 # Present
+                                    q_result[x+1] = 0x09
                                     x += 2
                             q_result[0], q_result[1], q_result[2] = 0xaa, x-2, sequence
                             q_result[x] = self.base.generate_checksum(q_result, x)
                         
-                        elif command == 0xB4: # UID Request
-                            req_idx = buf[4] # The index in the presence list
+                        elif command == 0xB4: # UID
+                            req_idx = buf[4]
                             q_result[0:4] = [0xaa, 0x09, sequence, 0x00]
                             if req_idx < len(self.active_map):
                                 slot_id = self.active_map[req_idx]
                                 q_result[4:11] = self.slots[slot_id]["uid"]
                             q_result[11] = self.base.generate_checksum(q_result, 11)
+                            self.log_to_web("GET_UID", q_result[4:11])
                         
-                        elif command == 0xA2: # Data Read Request
+                        elif command == 0xA2: # READ DATA (The fix for "Sparkles")
                             req_idx, block = buf[4], buf[5]
-                            file_block = 1 if block == 0 else (block * 4)
+                            # Binary files are indexed linearly. 
+                            # Block 0 is the UID. Data starts at Block 1.
+                            # Each block is 16 bytes.
+                            data_offset = block * 16
+                            
                             q_result[0:4] = [0xaa, 0x12, sequence, 0x00]
                             if req_idx < len(self.active_map):
                                 slot_id = self.active_map[req_idx]
-                                if file_block < 20:
-                                    q_result[4:20] = self.slots[slot_id]["data"][16*file_block : 16*file_block+16]
+                                slot_data = self.slots[slot_id]["data"]
+                                if slot_data and data_offset + 16 <= len(slot_data):
+                                    q_result[4:20] = slot_data[data_offset : data_offset+16]
+                            
                             q_result[20] = self.base.generate_checksum(q_result, 20)
 
                         os.write(fd, q_result)
-            except Exception:
-                time.sleep(0.01)
+            except Exception as e:
+                # Silently catch USB disconnects but keep engine running
+                pass
 
 emulator = InfinityPi_Emulator()
 
