@@ -86,14 +86,10 @@ class InfinityPi_Emulator:
         self.base_path = os.path.join(script_dir, "bins")
         self.categories = ["Characters", "Playsets", "PowerDiscs", "Vehicles"]
         
-        # FIXED SLOT MAPPING (MATCHES PHYSICAL HARDWARE SIDs)
-        # 0: P1 Char (0x20), 1: P2 Char (0x30), 2: Hex (0x10)
-        # 3,4: P1 Discs (0x21, 0x22), 5,6: P2 Discs (0x31, 0x32)
-        self.slot_sids = [0x20, 0x30, 0x10, 0x21, 0x22, 0x31, 0x32]
-        
         self.slots = {}
         for i in range(7):
-            self.slots[i] = {"name": "Empty", "uid": b"\x00"*7, "data": None, "sid": self.slot_sids[i]}
+            sid = 0x20 if i in [0,3,4] else 0x30 if i in [1,5,6] else 0x10
+            self.slots[i] = {"name": "Empty", "uid": b"\x00"*7, "data": None, "sid": sid}
         
         if not os.path.exists(self.base_path): os.makedirs(self.base_path, exist_ok=True)
         for c in self.categories: os.makedirs(os.path.join(self.base_path, c), exist_ok=True)
@@ -126,28 +122,21 @@ class InfinityPi_Emulator:
                             self.base.get_next_and_scramble(sequence, q_result)
                         elif command in [0x90, 0x92, 0x93, 0x95, 0x96, 0xB5]:
                             self.base.get_blank_response(sequence, q_result)
-                        
-                        elif command == 0xA1: # PRESENT FIGURES
+                        elif command == 0xA1: # Presence check
                             x = 3
                             for i in range(7):
                                 if self.slots[i]["data"] is not None:
-                                    q_result[x] = self.slots[i]["sid"]
-                                    q_result[x+1] = 0x09 # Status: Present
+                                    q_result[x], q_result[x+1] = self.slots[i]["sid"] + i, 0x09
                                     x += 2
                             q_result[0], q_result[1], q_result[2] = 0xaa, x-2, sequence
                             q_result[x] = self.base.generate_checksum(q_result, x)
-                        
-                        elif command == 0xB4: # GET UID
-                            order = buf[4] # This is index 0-6
+                        elif command == 0xB4: # UID check
+                            order = buf[4]
                             q_result[0:4] = [0xaa, 0x09, sequence, 0x00]
                             if order < 7 and self.slots[order]["data"] is not None:
                                 q_result[4:11] = self.slots[order]["uid"]
-                            else:
-                                # Send Blank UID if slot is empty
-                                q_result[4:11] = b"\x00" * 7
                             q_result[11] = self.base.generate_checksum(q_result, 11)
-                        
-                        elif command == 0xA2: # READ DATA
+                        elif command == 0xA2: # Data Read
                             order, block = buf[4], buf[5]
                             file_block = 1 if block == 0 else (block * 4)
                             q_result[0:4] = [0xaa, 0x12, sequence, 0x00]
@@ -206,8 +195,11 @@ def web_remove_all():
     with emulator.lock:
         for i in range(7):
             emulator.slots[i].update({"name": "Empty", "uid": b"\x00"*7, "data": None})
+    
+    # Emit outside the lock for better USB timing performance
     for i in range(7):
         socketio.emit('slot_update', {'slot': i, 'name': "Empty"})
+    
     emulator.log_to_web("SLOT_UPDATE", "ALL SLOTS CLEARED")
     return jsonify({"status": "ok"})
 
