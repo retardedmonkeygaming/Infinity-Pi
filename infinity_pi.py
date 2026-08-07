@@ -86,24 +86,19 @@ class InfinityPi_Emulator:
         self.base_path = os.path.join(script_dir, "bins")
         self.categories = ["Characters", "Playsets", "PowerDiscs", "Vehicles"]
         
-        # FIXED SLOT MAPPING (MATCHES PHYSICAL HARDWARE SIDs)
-        # 0: P1 Char (0x20), 1: P2 Char (0x30), 2: Hex (0x10)
-        # 3,4: P1 Discs (0x21, 0x22), 5,6: P2 Discs (0x31, 0x32)
-        self.slot_sids = [0x20, 0x30, 0x10, 0x21, 0x22, 0x31, 0x32]
-        
+        # Hardware-Correct Slot Mapping (Standard 0x00-0x06 range)
+        # 0: Pad 1, 1: Pad 2, 2: Pad 3 (Hex)
+        # 3,4: Pad 1 Discs, 5,6: Pad 2 Discs
         self.slots = {}
         for i in range(7):
-            self.slots[i] = {"name": "Empty", "uid": b"\x00"*7, "data": None, "sid": self.slot_sids[i]}
+            self.slots[i] = {"name": "Empty", "uid": b"\x00"*7, "data": None, "sid": i}
         
-        if not os.path.exists(self.base_path): os.makedirs(self.base_path, exist_ok=True)
-        for c in self.categories: os.makedirs(os.path.join(self.base_path, c), exist_ok=True)
+        # This map translates the Console's request index to our internal Slot ID
+        self.active_map = [] 
 
-    def log_to_web(self, tag, data_or_msg):
-        if isinstance(data_or_msg, (bytes, bytearray)):
-            msg = f"[{time.strftime('%H:%M:%S')}] [{tag}] {data_or_msg.hex()}"
-        else:
-            msg = f"[{time.strftime('%H:%M:%S')}] [{tag}] {data_or_msg}"
-        socketio.emit('log_update', {'msg': msg}, namespace='/')
+    def log_to_web(self, tag, msg):
+        log_msg = f"[{time.strftime('%H:%M:%S')}] [{tag}] {msg}"
+        socketio.emit('log_update', {'msg': log_msg}, namespace='/')
 
     def usb_engine(self):
         fd = os.open("/dev/hidg0", os.O_RDWR)
@@ -127,36 +122,38 @@ class InfinityPi_Emulator:
                         elif command in [0x90, 0x92, 0x93, 0x95, 0x96, 0xB5]:
                             self.base.get_blank_response(sequence, q_result)
                         
-                        elif command == 0xA1: # PRESENT FIGURES
+                        elif command == 0xA1: # Presence check
+                            self.active_map = [] # Reset map
                             x = 3
                             for i in range(7):
                                 if self.slots[i]["data"] is not None:
+                                    self.active_map.append(i) # Record that THIS slot is at THIS index
                                     q_result[x] = self.slots[i]["sid"]
-                                    q_result[x+1] = 0x09 # Status: Present
+                                    q_result[x+1] = 0x09 # Present
                                     x += 2
                             q_result[0], q_result[1], q_result[2] = 0xaa, x-2, sequence
                             q_result[x] = self.base.generate_checksum(q_result, x)
                         
-                        elif command == 0xB4: # GET UID
-                            order = buf[4] # This is index 0-6
+                        elif command == 0xB4: # UID Request
+                            req_idx = buf[4] # The index in the presence list
                             q_result[0:4] = [0xaa, 0x09, sequence, 0x00]
-                            if order < 7 and self.slots[order]["data"] is not None:
-                                q_result[4:11] = self.slots[order]["uid"]
-                            else:
-                                # Send Blank UID if slot is empty
-                                q_result[4:11] = b"\x00" * 7
+                            if req_idx < len(self.active_map):
+                                slot_id = self.active_map[req_idx]
+                                q_result[4:11] = self.slots[slot_id]["uid"]
                             q_result[11] = self.base.generate_checksum(q_result, 11)
                         
-                        elif command == 0xA2: # READ DATA
-                            order, block = buf[4], buf[5]
+                        elif command == 0xA2: # Data Read Request
+                            req_idx, block = buf[4], buf[5]
                             file_block = 1 if block == 0 else (block * 4)
                             q_result[0:4] = [0xaa, 0x12, sequence, 0x00]
-                            if order < 7 and self.slots[order]["data"] is not None and file_block < 20:
-                                q_result[4:20] = self.slots[order]["data"][16*file_block : 16*file_block+16]
+                            if req_idx < len(self.active_map):
+                                slot_id = self.active_map[req_idx]
+                                if file_block < 20:
+                                    q_result[4:20] = self.slots[slot_id]["data"][16*file_block : 16*file_block+16]
                             q_result[20] = self.base.generate_checksum(q_result, 20)
 
                         os.write(fd, q_result)
-            except Exception as e:
+            except Exception:
                 time.sleep(0.01)
 
 emulator = InfinityPi_Emulator()
@@ -187,7 +184,6 @@ def web_place():
             raw = bytearray(f.read())
             with emulator.lock:
                 emulator.slots[s_idx].update({"name": d['filename'], "uid": raw[0:7], "data": raw})
-        emulator.log_to_web("SLOT_UPDATE", f"Placed {d['filename']} in Slot {s_idx}")
         return jsonify({"status": "ok"})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
@@ -197,7 +193,6 @@ def web_remove():
     s_idx = int(request.json['slot'])
     with emulator.lock:
         emulator.slots[s_idx].update({"name": "Empty", "uid": b"\x00"*7, "data": None})
-    emulator.log_to_web("SLOT_UPDATE", f"Cleared Slot {s_idx}")
     socketio.emit('slot_update', {'slot': s_idx, 'name': "Empty"})
     return jsonify({"status": "ok"})
 
@@ -206,9 +201,7 @@ def web_remove_all():
     with emulator.lock:
         for i in range(7):
             emulator.slots[i].update({"name": "Empty", "uid": b"\x00"*7, "data": None})
-    for i in range(7):
-        socketio.emit('slot_update', {'slot': i, 'name': "Empty"})
-    emulator.log_to_web("SLOT_UPDATE", "ALL SLOTS CLEARED")
+            socketio.emit('slot_update', {'slot': i, 'name': "Empty"})
     return jsonify({"status": "ok"})
 
 if __name__ == "__main__":
