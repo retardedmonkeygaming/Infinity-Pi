@@ -74,7 +74,7 @@ Ensure your Pi is running the latest OS and has Python 3 installed:
 
 sudo pip3 install flask flask-socketio RPLCD RPi.GPIO
 
-2. Enable USB Gadget Mode
+2. Enable USB Gadget Mode.
 
 Add the following line to the end of /boot/config.txt:
 
