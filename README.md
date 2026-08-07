@@ -116,7 +116,8 @@ sudo python3 dire_pi.py
 
 * 🎮 **RPCS3 Team:** Core logic, PRNG, and scrambling algorithms ported directly from the RPCS3 Disney Infinity implementation.
 * 🛠️ **Project DIRE:** Originally inspired by the original hardware research and concepts of Project DIRE.
-* 🤖 **AI Collaboration:** Designed and optimized with AI assistance for low-latency performance.
+* 🤖 **AI Collaboration:** Designed and optimized with AI assistance for low-latency performance and proper implementation.
+**Assistance:** Please contact me on Instagram or open an issue for any assistance.
 
 ---
 
@@ -126,7 +127,7 @@ sudo python3 dire_pi.py
 | --- | --- |
 | **Developer** | [@vxprxx](https://www.google.com/search?q=https://instagram.com/vxprxx) |
 | **GitHub Profile** | [retardedmonkeygaming](https://www.google.com/search?q=https://github.com/retardedmonkeygaming) |
-| **Status** | 🟢 Free to use for all hobbyists & retrogaming enthusiasts |
+| **Status** | Free to use for all |
 
 ---
 
