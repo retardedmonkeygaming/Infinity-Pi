@@ -73,14 +73,14 @@ class InfinityBase:
 
 # --- WEB SERVER CONFIG ---
 app = Flask(__name__)
-socketio = SocketIO(app, cors_allowed_origins="*")
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
 
 class InfinityPi_Emulator:
     def __init__(self):
         self.lcd = CharLCD(pin_rs=22, pin_e=17, pins_data=[25, 24, 23, 18], numbering_mode=GPIO.BCM, cols=16, rows=2)
         self.base = InfinityBase()
         
-        # Directory Fix: Relative to the script's location
+        # RELATIVE DIRECTORY FIX
         script_dir = os.path.dirname(os.path.abspath(__file__))
         self.base_path = os.path.join(script_dir, "bins")
         
@@ -95,22 +95,21 @@ class InfinityPi_Emulator:
         self.files = []
         self.touch_start, self.press_count, self.last_press = 0, 0, 0
         
-        print(f"[*] Base Path set to: {self.base_path}")
-        for c in self.categories:
-            p = os.path.join(self.base_path, c)
-            os.makedirs(p, exist_ok=True)
+        if not os.path.exists(self.base_path):
+            os.makedirs(self.base_path, exist_ok=True)
+            print(f"[*] Created bins directory at: {self.base_path}")
         
         self.load_category()
 
     def log_to_web(self, tag, data):
         msg = f"[{time.strftime('%H:%M:%S')}] [{tag}] {data.hex()}"
-        # Print to terminal
         print(msg)
-        # Broadcast to all connected web clients
+        # Fixed: Explicit broadcast for background thread
         socketio.emit('log_update', {'msg': msg}, namespace='/')
 
     def load_category(self):
         path = os.path.join(self.base_path, self.categories[self.cat_idx])
+        if not os.path.exists(path): os.makedirs(path, exist_ok=True)
         self.files = sorted(list(set([f for f in os.listdir(path) if f.lower().endswith('.bin')])))
         self.update_ui()
 
@@ -130,9 +129,7 @@ class InfinityPi_Emulator:
             if not buf or len(buf) < 32: continue
 
             if buf[0] == 0xff:
-                # Immediate echo for handshake log visibility
                 self.log_to_web("RECV_AUTH", buf)
-                
                 command, sequence = buf[2], buf[3]
                 q_result = bytearray(32)
 
@@ -156,14 +153,14 @@ class InfinityPi_Emulator:
                 elif command == 0xB4: # get_figure_identifier
                     order = buf[4]
                     q_result[0:4] = [0xaa, 0x09, sequence, 0x00]
-                    if order in self.slots and self.slots[order]["data"]:
+                    if order < 7 and self.slots[order]["data"]:
                         q_result[4:11] = self.slots[order]["uid"]
                     q_result[11] = self.base.generate_checksum(q_result, 11)
                 elif command == 0xA2: # query_block
                     order, block = buf[4], buf[5]
                     file_block = 1 if block == 0 else (block * 4)
                     q_result[0:4] = [0xaa, 0x12, sequence, 0x00]
-                    if order in self.slots and self.slots[order]["data"] and file_block < 20:
+                    if order < 7 and self.slots[order]["data"] and file_block < 20:
                         q_result[4:20] = self.slots[order]["data"][16*file_block : 16*file_block+16]
                     q_result[20] = self.base.generate_checksum(q_result, 20)
 
@@ -182,7 +179,7 @@ class InfinityPi_Emulator:
                         raw = bytearray(f.read())
                         self.slots[0].update({"name": self.files[self.file_idx], "uid": raw[0:7], "data": raw})
                     self.update_ui()
-                    socketio.emit('slot_update', {'slot': 0, 'name': self.files[self.file_idx]})
+                    socketio.emit('slot_update', {'slot': 0, 'name': self.files[self.file_idx]}, namespace='/')
                 while GPIO.input(27): time.sleep(0.01)
                 self.touch_start = 0
         else:
