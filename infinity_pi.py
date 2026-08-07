@@ -23,22 +23,22 @@ class InfinityBase:
         res[0], res[1], res[2] = 0xaa, 0x01, sequence
         res[3] = self.generate_checksum(res, 3)
 
-    def descramble(self, num_to_descramble):
+    def descramble(self, val):
         mask, ret = self.mask, 0
-        for _ in range(64):
+        for i in range(64):
             if mask & 0x8000000000000000:
-                ret = (ret << 1) | (num_to_descramble & 0x01)
-            num_to_descramble >>= 1
+                ret = (ret << 1) | (val & 0x01)
+            val >>= 1
             mask = (mask << 1) & 0xFFFFFFFFFFFFFFFF
         return ret & 0xFFFFFFFF
 
-    def scramble(self, num_to_scramble, garbage):
+    def scramble(self, val, garbage):
         mask, ret = self.mask, 0
-        for _ in range(64):
+        for i in range(64):
             ret <<= 1
             if (mask & 1) != 0:
-                ret |= (num_to_scramble & 1)
-                num_to_scramble >>= 1
+                ret |= (val & 1)
+                val >>= 1
             else:
                 ret |= (garbage & 1)
                 garbage >>= 1
@@ -62,6 +62,19 @@ class InfinityBase:
         self.random_b = self.random_c = self.random_d = seed
         for _ in range(23): self.get_next()
 
+    def descramble_and_seed(self, buf, sequence, res):
+        val = int.from_bytes(buf[4:12], 'big')
+        seed = self.descramble(val)
+        self.generate_seed(seed)
+        self.get_blank_response(sequence, res)
+
+    def get_next_and_scramble(self, sequence, res):
+        next_random = self.get_next()
+        scrambled = self.scramble(next_random, 0)
+        res[0], res[1], res[2] = 0xAA, 0x09, sequence
+        res[3:11] = scrambled.to_bytes(8, 'big')
+        res[11] = self.generate_checksum(res, 11)
+
 # --- WEB SERVER CONFIG ---
 app = Flask(__name__)
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
@@ -71,10 +84,12 @@ class InfinityPi_Emulator:
         self.lcd = CharLCD(pin_rs=22, pin_e=17, pins_data=[25, 24, 23, 18], numbering_mode=GPIO.BCM, cols=16, rows=2)
         self.base = InfinityBase()
         
+        # RELATIVE DIRECTORY FIX
         script_dir = os.path.dirname(os.path.abspath(__file__))
         self.base_path = os.path.join(script_dir, "bins")
         
         self.categories = ["Characters", "Playsets", "PowerDiscs", "Vehicles"]
+        
         self.slots = {}
         for i in range(7):
             sid = 0x20 if i in [0,3,4] else 0x30 if i in [1,5,6] else 0x10
@@ -84,17 +99,20 @@ class InfinityPi_Emulator:
         self.files = []
         self.touch_start, self.press_count, self.last_press = 0, 0, 0
         
-        if not os.path.exists(self.base_path): os.makedirs(self.base_path, exist_ok=True)
-        for c in self.categories: os.makedirs(os.path.join(self.base_path, c), exist_ok=True)
+        if not os.path.exists(self.base_path):
+            os.makedirs(self.base_path, exist_ok=True)
+            print(f"[*] Created bins directory at: {self.base_path}")
         
         self.load_category()
 
     def log_to_web(self, tag, data):
         msg = f"[{time.strftime('%H:%M:%S')}] [{tag}] {data.hex()}"
-        socketio.emit('log_update', {'msg': msg}, namespace='/')
+        print(msg)
+        socketio.emit('log_update', {'msg': msg})
 
     def load_category(self):
         path = os.path.join(self.base_path, self.categories[self.cat_idx])
+        if not os.path.exists(path): os.makedirs(path, exist_ok=True)
         self.files = sorted(list(set([f for f in os.listdir(path) if f.lower().endswith('.bin')])))
         self.update_ui()
 
@@ -164,7 +182,7 @@ class InfinityPi_Emulator:
                         raw = bytearray(f.read())
                         self.slots[0].update({"name": self.files[self.file_idx], "uid": raw[0:7], "data": raw})
                     self.update_ui()
-                    socketio.emit('slot_update', {'slot': 0, 'name': self.files[self.file_idx]}, namespace='/')
+                    socketio.emit('slot_update', {'slot': 0, 'name': self.files[self.file_idx]})
                 while GPIO.input(27): time.sleep(0.01)
                 self.touch_start = 0
         else:
@@ -172,8 +190,10 @@ class InfinityPi_Emulator:
                 if (now - self.touch_start) < 0.5: self.press_count += 1; self.last_press = now
                 self.touch_start = 0
         if self.press_count > 0 and (now - self.last_press) > 0.3:
-            if self.press_count == 1 and self.files: self.file_idx = (self.file_idx + 1) % len(self.files)
-            elif self.press_count >= 2: self.cat_idx = (self.cat_idx + 1) % 4; self.load_category()
+            if self.press_count == 1 and self.files:
+                self.file_idx = (self.file_idx + 1) % len(self.files)
+            elif self.press_count >= 2:
+                self.cat_idx = (self.cat_idx + 1) % 4; self.load_category()
             self.update_ui(); self.press_count = 0
 
 emulator = InfinityPi_Emulator()
@@ -190,7 +210,10 @@ def get_files():
     res = {}
     for c in emulator.categories:
         p = os.path.join(emulator.base_path, c)
-        res[c] = sorted(list(set([f for f in os.listdir(p) if f.lower().endswith('.bin')]))) if os.path.exists(p) else []
+        if os.path.exists(p):
+            res[c] = sorted(list(set([f for f in os.listdir(p) if f.lower().endswith('.bin')])))
+        else:
+            res[c] = []
     return jsonify(res)
 
 @app.route('/api/place', methods=['POST'])
@@ -209,14 +232,14 @@ def web_remove():
     s_idx = int(request.json['slot'])
     emulator.slots[s_idx].update({"name": "Empty", "uid": b"\x00"*7, "data": None})
     emulator.update_ui()
-    socketio.emit('slot_update', {'slot': s_idx, 'name': "Empty"}, namespace='/')
+    socketio.emit('slot_update', {'slot': s_idx, 'name': "Empty"})
     return jsonify({"status": "ok"})
 
 @app.route('/api/remove_all', methods=['POST'])
 def web_remove_all():
     for i in range(7):
         emulator.slots[i].update({"name": "Empty", "uid": b"\x00"*7, "data": None})
-        socketio.emit('slot_update', {'slot': i, 'name': "Empty"}, namespace='/')
+        socketio.emit('slot_update', {'slot': i, 'name': "Empty"})
     emulator.update_ui()
     return jsonify({"status": "ok"})
 

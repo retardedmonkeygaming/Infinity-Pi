@@ -7,7 +7,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Force body to be at least screen height and footer at the bottom */
+        /* Sticky Footer Logic */
         body { 
             background: #02040a; 
             color: #94a3b8; 
@@ -17,7 +17,7 @@
             display: flex; 
             flex-direction: column; 
         }
-        .main-container { flex: 1; }
+        .main-content { flex: 1 0 auto; }
 
         .log-box { 
             height: 160px; 
@@ -30,10 +30,11 @@
             overflow-y: auto;
         }
         
+        /* 2-line height boxes for better text fitting */
         .figure-card { 
             background: #0f172a; 
             border: 1px solid #1e293b; 
-            min-height: 95px; 
+            min-height: 100px; 
             display: flex; 
             align-items: center; 
             justify-content: center; 
@@ -60,17 +61,16 @@
         .active-slot { border-color: #3b82f6 !important; background: #172554 !important; box-shadow: 0 0 20px rgba(59, 130, 246, 0.15); }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         
-        /* Static Footer Styling */
         footer { 
+            flex-shrink: 0;
             background: #0a0f1d; 
             border-top: 1px solid #1e293b; 
-            width: 100%;
-            padding: 2.5rem 1.5rem;
+            padding: 2rem 1rem;
         }
     </style>
 </head>
 <body>
-    <div class="main-container p-4 md:p-8 max-w-6xl mx-auto w-full">
+    <div class="main-content p-4 md:p-8 max-w-6xl mx-auto w-full">
         <!-- Header -->
         <header class="flex flex-col sm:flex-row justify-between items-center mb-10 gap-6">
             <div class="flex items-center gap-6">
@@ -151,9 +151,9 @@
                 </a>
                 <p class="text-[9px] font-black text-slate-700 uppercase tracking-[0.4em]">FREE TO USE FOR ALL</p>
             </div>
-            <div class="text-[9px] font-bold md:text-right space-y-1">
-                <p class="text-slate-500 uppercase">RPCS3 Disney Infinity Base Emulation</p>
-                <p class="text-blue-500/60 uppercase">Based on Project DIRE</p>
+            <div class="text-[9px] font-bold md:text-right text-slate-500 uppercase space-y-1">
+                <p>RPCS3 Disney Infinity Base Emulation</p>
+                <p>Based on Project DIRE</p>
                 <p class="text-slate-800 italic">AI-Assisted Hobbyist Project</p>
             </div>
         </div>
@@ -165,7 +165,6 @@
         let allFiles = {};
         let activeFilter = 'All';
 
-        // Fix: Ensure SocketIO connects correctly for logging
         socket.on('log_update', d => {
             const l = document.getElementById('logs');
             const row = document.createElement('div');
@@ -182,23 +181,20 @@
         });
 
         function setSlot(id) {
-            for(let i=0; i<7; i++) {
-                let el = document.getElementById(`slot-${i}`);
-                if(el) el.classList.remove('active-slot');
-            }
+            for(let i=0; i<7; i++) document.getElementById(`slot-${i}`).classList.remove('active-slot');
             document.getElementById(`slot-${id}`).classList.add('active-slot');
             currentSlot = id;
         }
 
         async function init() {
-            // Persistence: Fetch current slot status from Pi on load
+            // Persistence Fix: Load backend slot state on startup
             const slotRes = await fetch('/api/slots');
             const currentSlots = await slotRes.json();
             Object.entries(currentSlots).forEach(([id, name]) => {
-                document.getElementById(`name-${id}`).innerText = name.replace('.bin','');
+                const el = document.getElementById(`name-${id}`);
+                if(el) el.innerText = name.replace('.bin','');
             });
 
-            // Load binary files
             const res = await fetch('/api/files');
             allFiles = await res.json();
             const tabs = document.getElementById('tabs');
@@ -220,7 +216,6 @@
             const grid = document.getElementById('grid');
             grid.innerHTML = "";
             
-            // Tab styling
             document.querySelectorAll('#tabs button').forEach(b => {
                 b.classList.remove('bg-blue-600', 'text-white');
                 b.classList.add('bg-slate-900', 'text-slate-500');
@@ -248,7 +243,6 @@
         }
 
         async function place(cat, file) {
-            // Update UI immediately (Optimistic)
             document.getElementById(`name-${currentSlot}`).innerText = file.replace('.bin','');
             await fetch('/api/place', {
                 method: 'POST',
@@ -268,7 +262,8 @@
 
         async function removeAll() {
             for(let i=0; i<7; i++) {
-                document.getElementById(`name-${i}`).innerText = "Empty";
+                const el = document.getElementById(`name-${i}`);
+                if(el) el.innerText = "Empty";
             }
             await fetch('/api/remove_all', { method: 'POST' });
         }
