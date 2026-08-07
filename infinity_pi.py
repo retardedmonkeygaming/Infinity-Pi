@@ -86,18 +86,18 @@ class InfinityPi_Emulator:
         self.base_path = os.path.join(script_dir, "bins")
         self.categories = ["Characters", "Playsets", "PowerDiscs", "Vehicles"]
         
-        # SIDs: 0=Hex, 1=P1, 2=P2, 3..6=Discs
-        self.sids = [0x01, 0x02, 0x00, 0x03, 0x04, 0x05, 0x06]
+        # SIDs mapping to Pad Indices:
+        # 0x00: Hex (Center), 0x01: P1, 0x02: P2, 0x03-0x06: Discs
+        self.slot_sids = [0x01, 0x02, 0x00, 0x03, 0x04, 0x05, 0x06]
         self.slots = {}
         for i in range(7):
-            self.slots[i] = {"name": "Empty", "uid": b"\x00"*7, "data": None, "sid": self.sids[i]}
+            self.slots[i] = {"name": "Empty", "uid": b"\x00"*7, "data": None, "sid": self.slot_sids[i]}
         
         self.active_map = [] 
 
     def log_to_web(self, tag, data):
-        # Full packet logging restored
-        hex_data = data.hex() if isinstance(data, (bytes, bytearray)) else str(data)
-        msg = f"[{time.strftime('%H:%M:%S')}] [{tag}] {hex_data}"
+        hex_str = data.hex() if isinstance(data, (bytes, bytearray)) else str(data)
+        msg = f"[{time.strftime('%H:%M:%S')}] [{tag}] {hex_str}"
         socketio.emit('log_update', {'msg': msg}, namespace='/')
 
     def usb_engine(self):
@@ -117,7 +117,6 @@ class InfinityPi_Emulator:
                                               0x20, 0x32, 0x62, 0x36, 0x36, 0x4b, 0x34, 0x99, 0x67, 0x31, 0x93, 0x8c]
                         elif command == 0x81:
                             self.base.descramble_and_seed(buf, sequence, q_result)
-                            self.log_to_web("AUTH_SEED", buf[4:12])
                         elif command == 0x83:
                             self.base.get_next_and_scramble(sequence, q_result)
                         elif command in [0x90, 0x92, 0x93, 0x95, 0x96, 0xB5]:
@@ -130,7 +129,7 @@ class InfinityPi_Emulator:
                                 if self.slots[i]["data"] is not None:
                                     self.active_map.append(i)
                                     q_result[x] = self.slots[i]["sid"]
-                                    q_result[x+1] = 0x09
+                                    q_result[x+1] = 0x09 # Status Present
                                     x += 2
                             q_result[0], q_result[1], q_result[2] = 0xaa, x-2, sequence
                             q_result[x] = self.base.generate_checksum(q_result, x)
@@ -144,26 +143,21 @@ class InfinityPi_Emulator:
                             q_result[11] = self.base.generate_checksum(q_result, 11)
                             self.log_to_web("GET_UID", q_result[4:11])
                         
-                        elif command == 0xA2: # READ DATA (The fix for "Sparkles")
+                        elif command == 0xA2: # Data Read
                             req_idx, block = buf[4], buf[5]
-                            # Binary files are indexed linearly. 
-                            # Block 0 is the UID. Data starts at Block 1.
-                            # Each block is 16 bytes.
-                            data_offset = block * 16
-                            
                             q_result[0:4] = [0xaa, 0x12, sequence, 0x00]
                             if req_idx < len(self.active_map):
                                 slot_id = self.active_map[req_idx]
-                                slot_data = self.slots[slot_id]["data"]
-                                if slot_data and data_offset + 16 <= len(slot_data):
-                                    q_result[4:20] = slot_data[data_offset : data_offset+16]
-                            
+                                data = self.slots[slot_id]["data"]
+                                if data:
+                                    offset = block * 16
+                                    if offset + 16 <= len(data):
+                                        q_result[4:20] = data[offset:offset+16]
                             q_result[20] = self.base.generate_checksum(q_result, 20)
 
                         os.write(fd, q_result)
             except Exception as e:
-                # Silently catch USB disconnects but keep engine running
-                pass
+                time.sleep(0.01)
 
 emulator = InfinityPi_Emulator()
 
@@ -193,6 +187,7 @@ def web_place():
             raw = bytearray(f.read())
             with emulator.lock:
                 emulator.slots[s_idx].update({"name": d['filename'], "uid": raw[0:7], "data": raw})
+        socketio.emit('slot_update', {'slot': s_idx, 'name': d['filename']})
         return jsonify({"status": "ok"})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
