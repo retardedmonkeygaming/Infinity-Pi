@@ -116,8 +116,8 @@ sudo python3 infinity_pi.py
 
 * 🎮 **RPCS3 Team:** Core logic, PRNG, and scrambling algorithms ported directly from the RPCS3 Disney Infinity implementation.
 * 🛠️ **Project DIRE:** Originally inspired by the original hardware research and concepts of Project DIRE.
-* 🤖 **AI Collaboration:** Designed and optimized with AI assistance for low-latency performance and proper implementation.
-**Assistance:** Please contact me on Instagram or open an issue for any assistance.
+* 🤖 **AI Collaboration:** Made with the help of AI (sorry guys. I am a hobbyist only 😔)
+* **Assistance:** Please contact me on Instagram or open an issue for any assistance.
 
 ---
 
