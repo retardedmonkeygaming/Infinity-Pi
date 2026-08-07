@@ -65,7 +65,7 @@ InfinityPi/
 Ensure your Pi is running Python 3 and install the core application requirements:
 
 ```bash
-sudo pip3 install flask flask-socketio RPi.GPIO
+sudo pip3 install flask flask-socketio RPi.GPIO --break-system-packages
 
 ```
 
@@ -103,7 +103,7 @@ sudo bash base_identity.sh
 Start the main emulation engine with root permissions:
 
 ```bash
-sudo python3 dire_pi.py
+sudo python3 infinity_pi.py
 
 ```
 
@@ -116,7 +116,8 @@ sudo python3 dire_pi.py
 
 * 🎮 **RPCS3 Team:** Core logic, PRNG, and scrambling algorithms ported directly from the RPCS3 Disney Infinity implementation.
 * 🛠️ **Project DIRE:** Originally inspired by the original hardware research and concepts of Project DIRE.
-* 🤖 **AI Collaboration:** Designed and optimized with AI assistance for low-latency performance.
+* 🤖 **AI Collaboration:** Designed and optimized with AI assistance for low-latency performance and proper implementation.
+**Assistance:** Please contact me on Instagram or open an issue for any assistance.
 
 ---
 
@@ -126,7 +127,7 @@ sudo python3 dire_pi.py
 | --- | --- |
 | **Developer** | [@vxprxx](https://www.google.com/search?q=https://instagram.com/vxprxx) |
 | **GitHub Profile** | [retardedmonkeygaming](https://www.google.com/search?q=https://github.com/retardedmonkeygaming) |
-| **Status** | 🟢 Free to use for all hobbyists & retrogaming enthusiasts |
+| **Status** | Free to use for all |
 
 ---
 
