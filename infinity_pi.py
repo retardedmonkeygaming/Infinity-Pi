@@ -23,22 +23,22 @@ class InfinityBase:
         res[0], res[1], res[2] = 0xaa, 0x01, sequence
         res[3] = self.generate_checksum(res, 3)
 
-    def descramble(self, val):
+    def descramble(self, num_to_descramble):
         mask, ret = self.mask, 0
-        for i in range(64):
+        for _ in range(64):
             if mask & 0x8000000000000000:
-                ret = (ret << 1) | (val & 0x01)
-            val >>= 1
+                ret = (ret << 1) | (num_to_descramble & 0x01)
+            num_to_descramble >>= 1
             mask = (mask << 1) & 0xFFFFFFFFFFFFFFFF
         return ret & 0xFFFFFFFF
 
-    def scramble(self, val, garbage):
+    def scramble(self, num_to_scramble, garbage):
         mask, ret = self.mask, 0
-        for i in range(64):
+        for _ in range(64):
             ret <<= 1
             if (mask & 1) != 0:
-                ret |= (val & 1)
-                val >>= 1
+                ret |= (num_to_scramble & 1)
+                num_to_scramble >>= 1
             else:
                 ret |= (garbage & 1)
                 garbage >>= 1
@@ -62,19 +62,6 @@ class InfinityBase:
         self.random_b = self.random_c = self.random_d = seed
         for _ in range(23): self.get_next()
 
-    def descramble_and_seed(self, buf, sequence, res):
-        val = int.from_bytes(buf[4:12], 'big')
-        seed = self.descramble(val)
-        self.generate_seed(seed)
-        self.get_blank_response(sequence, res)
-
-    def get_next_and_scramble(self, sequence, res):
-        next_random = self.get_next()
-        scrambled = self.scramble(next_random, 0)
-        res[0], res[1], res[2] = 0xAA, 0x09, sequence
-        res[3:11] = scrambled.to_bytes(8, 'big')
-        res[11] = self.generate_checksum(res, 11)
-
 # --- WEB SERVER CONFIG ---
 app = Flask(__name__)
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
@@ -84,7 +71,6 @@ class InfinityPi_Emulator:
         self.lcd = CharLCD(pin_rs=22, pin_e=17, pins_data=[25, 24, 23, 18], numbering_mode=GPIO.BCM, cols=16, rows=2)
         self.base = InfinityBase()
         
-        # RELATIVE DIRECTORY: Looks for 'bins' in the same folder as this script
         script_dir = os.path.dirname(os.path.abspath(__file__))
         self.base_path = os.path.join(script_dir, "bins")
         
@@ -98,7 +84,6 @@ class InfinityPi_Emulator:
         self.files = []
         self.touch_start, self.press_count, self.last_press = 0, 0, 0
         
-        # Ensure folders exist
         if not os.path.exists(self.base_path): os.makedirs(self.base_path, exist_ok=True)
         for c in self.categories: os.makedirs(os.path.join(self.base_path, c), exist_ok=True)
         
@@ -106,7 +91,7 @@ class InfinityPi_Emulator:
 
     def log_to_web(self, tag, data):
         msg = f"[{time.strftime('%H:%M:%S')}] [{tag}] {data.hex()}"
-        socketio.emit('log_update', {'msg': msg})
+        socketio.emit('log_update', {'msg': msg}, namespace='/')
 
     def load_category(self):
         path = os.path.join(self.base_path, self.categories[self.cat_idx])
@@ -142,7 +127,7 @@ class InfinityPi_Emulator:
                     self.base.get_next_and_scramble(sequence, q_result)
                 elif command in [0x90, 0x92, 0x93, 0x95, 0x96, 0xB5]:
                     self.base.get_blank_response(sequence, q_result)
-                elif command == 0xA1: # get_present_figures
+                elif command == 0xA1: 
                     x = 3
                     for i in range(7):
                         if self.slots[i]["data"]:
@@ -150,13 +135,13 @@ class InfinityPi_Emulator:
                             x += 2
                     q_result[0], q_result[1], q_result[2] = 0xaa, x-2, sequence
                     q_result[x] = self.base.generate_checksum(q_result, x)
-                elif command == 0xB4: # get_figure_identifier
+                elif command == 0xB4: 
                     order = buf[4]
                     q_result[0:4] = [0xaa, 0x09, sequence, 0x00]
                     if order < 7 and self.slots[order]["data"]:
                         q_result[4:11] = self.slots[order]["uid"]
                     q_result[11] = self.base.generate_checksum(q_result, 11)
-                elif command == 0xA2: # query_block
+                elif command == 0xA2: 
                     order, block = buf[4], buf[5]
                     file_block = 1 if block == 0 else (block * 4)
                     q_result[0:4] = [0xaa, 0x12, sequence, 0x00]
@@ -179,7 +164,7 @@ class InfinityPi_Emulator:
                         raw = bytearray(f.read())
                         self.slots[0].update({"name": self.files[self.file_idx], "uid": raw[0:7], "data": raw})
                     self.update_ui()
-                    socketio.emit('slot_update', {'slot': 0, 'name': self.files[self.file_idx]})
+                    socketio.emit('slot_update', {'slot': 0, 'name': self.files[self.file_idx]}, namespace='/')
                 while GPIO.input(27): time.sleep(0.01)
                 self.touch_start = 0
         else:
@@ -195,6 +180,10 @@ emulator = InfinityPi_Emulator()
 
 @app.route('/')
 def index(): return render_template('index.html')
+
+@app.route('/api/slots')
+def get_slots():
+    return jsonify({k: v['name'] for k, v in emulator.slots.items()})
 
 @app.route('/api/files')
 def get_files():
@@ -220,12 +209,14 @@ def web_remove():
     s_idx = int(request.json['slot'])
     emulator.slots[s_idx].update({"name": "Empty", "uid": b"\x00"*7, "data": None})
     emulator.update_ui()
+    socketio.emit('slot_update', {'slot': s_idx, 'name': "Empty"}, namespace='/')
     return jsonify({"status": "ok"})
 
 @app.route('/api/remove_all', methods=['POST'])
 def web_remove_all():
     for i in range(7):
         emulator.slots[i].update({"name": "Empty", "uid": b"\x00"*7, "data": None})
+        socketio.emit('slot_update', {'slot': i, 'name': "Empty"}, namespace='/')
     emulator.update_ui()
     return jsonify({"status": "ok"})
 
