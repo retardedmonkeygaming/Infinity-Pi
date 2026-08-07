@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>InfinityPi Portal</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background: #05070a; color: #94a3b8; font-family: 'Inter', system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
+        .log-box { height: 120px; background: #000; font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #10b981; border: 1px solid #1e293b; }
+        .figure-card { 
+            background: #0f172a; border: 1px solid #1e293b; min-height: 80px; 
+            display: flex; align-items: center; justify-content: center; padding: 12px;
+            border-radius: 16px; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer;
+        }
+        .figure-card:active { transform: scale(0.95); background: #1e293b; }
+        @media (min-width: 768px) { .figure-card:hover { border-color: #3b82f6; transform: translateY(-2px); background: #131c2e; } }
+        .card-text { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: 0.75rem; line-height: 1.2; font-weight: 700; color: #f8fafc; }
+        .slot-active { border: 2px solid #3b82f6 !important; background: #172554 !important; box-shadow: 0 0 20px rgba(59, 130, 246, 0.15); }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="p-4 md:p-8 pb-48">
+    <div class="max-w-6xl mx-auto">
+        <!-- Header -->
+        <header class="flex flex-col sm:flex-row justify-between items-center mb-10 gap-6">
+            <div class="flex items-center gap-6">
+                <h1 class="text-4xl font-black tracking-tighter text-white italic">InfinityPi</h1>
+                <button onclick="removeAll()" class="bg-red-500/10 text-red-500 border border-red-500/20 px-5 py-2 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-red-500 hover:text-white transition-all">Clear All</button>
+            </div>
+            <div class="w-full sm:w-72 relative">
+                <input type="text" id="search" placeholder="Search library..." class="w-full bg-slate-900 border border-slate-800 rounded-2xl px-6 py-3 focus:outline-none focus:border-blue-500 transition-all text-sm">
+            </div>
+        </header>
+
+        <!-- Main Figures -->
+        <h2 class="text-[10px] uppercase font-black text-slate-600 mb-4 tracking-[0.3em] ml-1">Portal Positions</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+            <div id="slot-0" onclick="setSlot(0)" class="relative bg-slate-900/50 border-2 border-slate-800 p-6 rounded-3xl text-center slot-active cursor-pointer transition-all">
+                <div class="text-[9px] uppercase font-black text-blue-500/50 mb-1 tracking-widest">Player 1</div>
+                <div id="name-0" class="font-bold text-blue-400 text-lg truncate">Empty</div>
+                <button onclick="event.stopPropagation(); clearSlot(0)" class="absolute top-3 right-3 text-slate-700 hover:text-red-500">✕</button>
+            </div>
+            <div id="slot-2" onclick="setSlot(2)" class="relative bg-slate-900/50 border-2 border-slate-800 p-6 rounded-3xl text-center cursor-pointer transition-all">
+                <div class="text-[9px] uppercase font-black text-emerald-500/50 mb-1 tracking-widest">Hex Center</div>
+                <div id="name-2" class="font-bold text-emerald-400 text-lg truncate">Empty</div>
+                <button onclick="event.stopPropagation(); clearSlot(2)" class="absolute top-3 right-3 text-slate-700 hover:text-red-500">✕</button>
+            </div>
+            <div id="slot-1" onclick="setSlot(1)" class="relative bg-slate-900/50 border-2 border-slate-800 p-6 rounded-3xl text-center cursor-pointer transition-all">
+                <div class="text-[9px] uppercase font-black text-purple-500/50 mb-1 tracking-widest">Player 2</div>
+                <div id="name-1" class="font-bold text-purple-400 text-lg truncate">Empty</div>
+                <button onclick="event.stopPropagation(); clearSlot(1)" class="absolute top-3 right-3 text-slate-700 hover:text-red-500">✕</button>
+            </div>
+        </div>
+
+        <!-- Power Discs -->
+        <h2 class="text-[10px] uppercase font-black text-slate-600 mb-4 tracking-[0.3em] ml-1">PowerDisc Stacks</h2>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-12">
+            <div id="slot-3" onclick="setSlot(3)" class="bg-slate-900/30 border border-slate-800 p-4 rounded-2xl text-center cursor-pointer hover:bg-slate-800/50 transition-all">
+                <div class="text-[8px] uppercase text-slate-600 font-bold mb-1">P1 Disc 1</div>
+                <div id="name-3" class="text-xs font-bold text-slate-400 truncate">Empty</div>
+            </div>
+            <div id="slot-4" onclick="setSlot(4)" class="bg-slate-900/30 border border-slate-800 p-4 rounded-2xl text-center cursor-pointer hover:bg-slate-800/50 transition-all">
+                <div class="text-[8px] uppercase text-slate-600 font-bold mb-1">P1 Disc 2</div>
+                <div id="name-4" class="text-xs font-bold text-slate-400 truncate">Empty</div>
+            </div>
+            <div id="slot-5" onclick="setSlot(5)" class="bg-slate-900/30 border border-slate-800 p-4 rounded-2xl text-center cursor-pointer hover:bg-slate-800/50 transition-all">
+                <div class="text-[8px] uppercase text-slate-600 font-bold mb-1">P2 Disc 1</div>
+                <div id="name-5" class="text-xs font-bold text-slate-400 truncate">Empty</div>
+            </div>
+            <div id="slot-6" onclick="setSlot(6)" class="bg-slate-900/30 border border-slate-800 p-4 rounded-2xl text-center cursor-pointer hover:bg-slate-800/50 transition-all">
+                <div class="text-[8px] uppercase text-slate-600 font-bold mb-1">P2 Disc 2</div>
+                <div id="name-6" class="text-xs font-bold text-slate-400 truncate">Empty</div>
+            </div>
+        </div>
+
+        <!-- Library Tabs -->
+        <div id="tabs" class="flex gap-2 mb-6 overflow-x-auto no-scrollbar pb-2">
+            <button onclick="filter('All')" class="bg-blue-600 px-8 py-3 rounded-2xl font-bold text-xs whitespace-nowrap text-white shadow-xl shadow-blue-900/20">All Files</button>
+        </div>
+        <div id="grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-12"></div>
+
+        <!-- Debug Console -->
+        <div class="log-box rounded-3xl p-6 overflow-y-auto shadow-2xl mb-12" id="logs"></div>
+    </div>
+
+    <!-- Enhanced Footer -->
+    <footer class="fixed bottom-0 left-0 w-full bg-slate-950/80 backdrop-blur-xl border-t border-slate-900 p-8 z-50">
+        <div class="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8 items-center">
+            <div class="text-center md:text-left space-y-1">
+                <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Contact Developer</p>
+                <p class="text-sm font-bold text-white">vxprxx <span class="text-slate-600 mx-2">|</span> Instagram</p>
+            </div>
+            
+            <div class="text-center space-y-3">
+                <a href="https://github.com/retardedmonkeygaming" target="_blank" class="inline-block bg-slate-900 hover:bg-slate-800 border border-slate-800 px-6 py-2 rounded-xl text-blue-400 text-xs font-bold transition-all truncate max-w-full">
+                    github.com/retardedmonkeygaming
+                </a>
+                <p class="text-[9px] font-bold text-slate-600 uppercase tracking-[0.2em]">Free to use for All</p>
+            </div>
+
+            <div class="text-center md:text-right space-y-1">
+                <p class="text-[9px] font-bold text-slate-500">Based on Project DIRE</p>
+                <p class="text-[9px] font-bold text-blue-500/80">RPCS3 Disney Infinity Base Emulation</p>
+                <p class="text-[9px] font-medium text-slate-700 italic">AI-Assisted Hobbyist Project</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        const socket = io();
+        let currentSlot = 0;
+        let allFiles = {};
+
+        socket.on('log_update', d => {
+            const l = document.getElementById('logs');
+            const row = document.createElement('div');
+            row.className = "mb-1 border-l-2 border-emerald-900 pl-3";
+            row.innerText = d.msg;
+            l.appendChild(row);
+            if(l.childNodes.length > 50) l.removeChild(l.firstChild);
+            l.scrollTop = l.scrollHeight;
+        });
+
+        function setSlot(id) {
+            for(let i=0; i<7; i++) {
+                let el = document.getElementById(`slot-${i}`);
+                if(el) el.classList.remove('slot-active');
+            }
+            document.getElementById(`slot-${id}`).classList.add('slot-active');
+            currentSlot = id;
+        }
+
+        async function init() {
+            const res = await fetch('/api/files');
+            allFiles = await res.json();
+            const tabs = document.getElementById('tabs');
+            Object.keys(allFiles).forEach(cat => {
+                if(allFiles[cat].length > 0) {
+                    tabs.innerHTML += `<button onclick="filter('${cat}')" class="bg-slate-900 border border-slate-800 hover:bg-slate-800 px-8 py-3 rounded-2xl font-bold text-xs whitespace-nowrap transition-all">${cat}</button>`;
+                }
+            });
+            render('All');
+        }
+
+        function render(catFilter, search = "") {
+            const grid = document.getElementById('grid');
+            grid.innerHTML = "";
+            let count = 0;
+            Object.entries(allFiles).forEach(([cat, files]) => {
+                if (catFilter === 'All' || catFilter === cat) {
+                    files.forEach(f => {
+                        const cleanName = f.replace('.bin', '');
+                        if (cleanName.toLowerCase().includes(search.toLowerCase())) {
+                            const card = document.createElement('div');
+                            card.className = "figure-card group";
+                            card.innerHTML = `<div class="card-text">${cleanName}</div>`;
+                            card.onclick = () => place(cat, f);
+                            grid.appendChild(card);
+                            count++;
+                        }
+                    });
+                }
+            });
+            if(count === 0) grid.innerHTML = `<div class="col-span-full py-10 text-center text-xs text-slate-600 font-bold uppercase tracking-widest">No figures found in ${catFilter}</div>`;
+        }
+
+        async function place(cat, file) {
+            document.getElementById(`name-${currentSlot}`).innerText = file.replace('.bin','');
+            fetch('/api/place', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({slot: currentSlot, category: cat, filename: file})
+            });
+        }
+
+        async function clearSlot(id) {
+            document.getElementById(`name-${id}`).innerText = "Empty";
+            fetch('/api/remove', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({slot: id})
+            });
+        }
+
+        async function removeAll() {
+            for(let i=0; i<7; i++) {
+                let el = document.getElementById(`name-${i}`);
+                if(el) el.innerText = "Empty";
+            }
+            fetch('/api/remove_all', { method: 'POST' });
+        }
+
+        document.getElementById('search').oninput = e => render('All', e.target.value);
+        function filter(c) { render(c); }
+        init();
+    </script>
+</body>
+</html>

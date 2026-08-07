@@ -1,0 +1,14 @@
+[Unit]
+Description=Project DIRE Base Identity Script
+After=network.target
+
+[Service]
+ExecStart=/home/admin/Project-DIRE/base_identity.sh
+WorkingDirectory=/home/admin/Project-DIRE
+StandardOutput=journal
+StandardError=journal
+Restart=always
+User=admin
+
+[Install]
+WantedBy=multi-user.target
