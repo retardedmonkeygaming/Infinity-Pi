@@ -47,7 +47,7 @@ The system uses relative pathing to index dumps. Organize your project root as f
 
 ```text
 InfinityPi/
-├── dire_pi.py          # Main Emulation Core Engine
+├── infinity_pi.py          # Main Emulation Core Engine
 ├── base_identity.sh    # USB Identity Configuration Script
 ├── templates/
 │   └── index.html      # Responsive Web Control Portal
