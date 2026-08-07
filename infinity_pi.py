@@ -84,12 +84,13 @@ class InfinityPi_Emulator:
         self.lcd = CharLCD(pin_rs=22, pin_e=17, pins_data=[25, 24, 23, 18], numbering_mode=GPIO.BCM, cols=16, rows=2)
         self.base = InfinityBase()
         
-        # RELATIVE DIRECTORY FIX
+        # RELATIVE DIRECTORY FIX: Looks in the project folder
         script_dir = os.path.dirname(os.path.abspath(__file__))
         self.base_path = os.path.join(script_dir, "bins")
         
         self.categories = ["Characters", "Playsets", "PowerDiscs", "Vehicles"]
         
+        # Virtual Slots (0-1: Chars, 2: Hex, 3-6: Discs)
         self.slots = {}
         for i in range(7):
             sid = 0x20 if i in [0,3,4] else 0x30 if i in [1,5,6] else 0x10
@@ -99,20 +100,18 @@ class InfinityPi_Emulator:
         self.files = []
         self.touch_start, self.press_count, self.last_press = 0, 0, 0
         
-        if not os.path.exists(self.base_path):
-            os.makedirs(self.base_path, exist_ok=True)
-            print(f"[*] Created bins directory at: {self.base_path}")
+        if not os.path.exists(self.base_path): os.makedirs(self.base_path, exist_ok=True)
+        for c in self.categories: os.makedirs(os.path.join(self.base_path, c), exist_ok=True)
         
         self.load_category()
 
     def log_to_web(self, tag, data):
         msg = f"[{time.strftime('%H:%M:%S')}] [{tag}] {data.hex()}"
         print(msg)
-        socketio.emit('log_update', {'msg': msg})
+        socketio.emit('log_update', {'msg': msg}, namespace='/')
 
     def load_category(self):
         path = os.path.join(self.base_path, self.categories[self.cat_idx])
-        if not os.path.exists(path): os.makedirs(path, exist_ok=True)
         self.files = sorted(list(set([f for f in os.listdir(path) if f.lower().endswith('.bin')])))
         self.update_ui()
 
@@ -145,7 +144,7 @@ class InfinityPi_Emulator:
                     self.base.get_next_and_scramble(sequence, q_result)
                 elif command in [0x90, 0x92, 0x93, 0x95, 0x96, 0xB5]:
                     self.base.get_blank_response(sequence, q_result)
-                elif command == 0xA1: 
+                elif command == 0xA1: # get_present_figures
                     x = 3
                     for i in range(7):
                         if self.slots[i]["data"]:
@@ -153,13 +152,13 @@ class InfinityPi_Emulator:
                             x += 2
                     q_result[0], q_result[1], q_result[2] = 0xaa, x-2, sequence
                     q_result[x] = self.base.generate_checksum(q_result, x)
-                elif command == 0xB4: 
+                elif command == 0xB4: # get_figure_identifier
                     order = buf[4]
                     q_result[0:4] = [0xaa, 0x09, sequence, 0x00]
                     if order < 7 and self.slots[order]["data"]:
                         q_result[4:11] = self.slots[order]["uid"]
                     q_result[11] = self.base.generate_checksum(q_result, 11)
-                elif command == 0xA2: 
+                elif command == 0xA2: # query_block
                     order, block = buf[4], buf[5]
                     file_block = 1 if block == 0 else (block * 4)
                     q_result[0:4] = [0xaa, 0x12, sequence, 0x00]
@@ -210,10 +209,7 @@ def get_files():
     res = {}
     for c in emulator.categories:
         p = os.path.join(emulator.base_path, c)
-        if os.path.exists(p):
-            res[c] = sorted(list(set([f for f in os.listdir(p) if f.lower().endswith('.bin')])))
-        else:
-            res[c] = []
+        res[c] = sorted(list(set([f for f in os.listdir(p) if f.lower().endswith('.bin')]))) if os.path.exists(p) else []
     return jsonify(res)
 
 @app.route('/api/place', methods=['POST'])
