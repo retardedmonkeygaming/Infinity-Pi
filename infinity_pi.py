@@ -79,11 +79,13 @@ class InfinityPi_Emulator:
     def __init__(self):
         self.lcd = CharLCD(pin_rs=22, pin_e=17, pins_data=[25, 24, 23, 18], numbering_mode=GPIO.BCM, cols=16, rows=2)
         self.base = InfinityBase()
-        self.base_path = "/home/admin/InfinityPi/bins"
+        
+        # Directory Fix: Relative to the script's location
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        self.base_path = os.path.join(script_dir, "bins")
+        
         self.categories = ["Characters", "Playsets", "PowerDiscs", "Vehicles"]
         
-        # Mapping slots to RPCS3 protocol indices (Fixed indices for PS4 detection)
-        # 0,1: Primary Characters | 2: Hex | 3,4,5,6: Stacked Discs
         self.slots = {}
         for i in range(7):
             sid = 0x20 if i in [0,3,4] else 0x30 if i in [1,5,6] else 0x10
@@ -93,19 +95,19 @@ class InfinityPi_Emulator:
         self.files = []
         self.touch_start, self.press_count, self.last_press = 0, 0, 0
         
-        # Verify directory existence on startup
-        print(f"[*] Scanning path: {self.base_path}")
+        print(f"[*] Base Path set to: {self.base_path}")
         for c in self.categories:
             p = os.path.join(self.base_path, c)
-            if not os.path.exists(p):
-                os.makedirs(p, exist_ok=True)
-                print(f"  [!] Created missing folder: {c}")
+            os.makedirs(p, exist_ok=True)
         
         self.load_category()
 
     def log_to_web(self, tag, data):
         msg = f"[{time.strftime('%H:%M:%S')}] [{tag}] {data.hex()}"
-        socketio.emit('log_update', {'msg': msg})
+        # Print to terminal
+        print(msg)
+        # Broadcast to all connected web clients
+        socketio.emit('log_update', {'msg': msg}, namespace='/')
 
     def load_category(self):
         path = os.path.join(self.base_path, self.categories[self.cat_idx])
@@ -128,6 +130,9 @@ class InfinityPi_Emulator:
             if not buf or len(buf) < 32: continue
 
             if buf[0] == 0xff:
+                # Immediate echo for handshake log visibility
+                self.log_to_web("RECV_AUTH", buf)
+                
                 command, sequence = buf[2], buf[3]
                 q_result = bytearray(32)
 
