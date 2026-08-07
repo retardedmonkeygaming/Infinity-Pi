@@ -14,7 +14,10 @@ class InfinityBase:
         self.mask = 0x8E55AA1B3999E8AA
 
     def generate_checksum(self, data, num_bytes):
-        return sum(data[:num_bytes]) & 0xFF
+        checksum = 0
+        for i in range(num_bytes):
+            checksum += data[i]
+        return checksum & 0xFF
 
     def get_blank_response(self, sequence, res):
         res[0], res[1], res[2] = 0xaa, 0x01, sequence
@@ -55,7 +58,8 @@ class InfinityBase:
         return ret
 
     def generate_seed(self, seed):
-        self.random_a, self.random_b, self.random_c, self.random_d = 0xF1EA5EED, seed, seed, seed
+        self.random_a = 0xF1EA5EED
+        self.random_b = self.random_c = self.random_d = seed
         for _ in range(23): self.get_next()
 
     def descramble_and_seed(self, buf, sequence, res):
@@ -80,12 +84,11 @@ class InfinityPi_Emulator:
         self.lcd = CharLCD(pin_rs=22, pin_e=17, pins_data=[25, 24, 23, 18], numbering_mode=GPIO.BCM, cols=16, rows=2)
         self.base = InfinityBase()
         
-        # RELATIVE DIRECTORY FIX
+        # RELATIVE DIRECTORY: Looks for 'bins' in the same folder as this script
         script_dir = os.path.dirname(os.path.abspath(__file__))
         self.base_path = os.path.join(script_dir, "bins")
         
         self.categories = ["Characters", "Playsets", "PowerDiscs", "Vehicles"]
-        
         self.slots = {}
         for i in range(7):
             sid = 0x20 if i in [0,3,4] else 0x30 if i in [1,5,6] else 0x10
@@ -95,21 +98,18 @@ class InfinityPi_Emulator:
         self.files = []
         self.touch_start, self.press_count, self.last_press = 0, 0, 0
         
-        if not os.path.exists(self.base_path):
-            os.makedirs(self.base_path, exist_ok=True)
-            print(f"[*] Created bins directory at: {self.base_path}")
+        # Ensure folders exist
+        if not os.path.exists(self.base_path): os.makedirs(self.base_path, exist_ok=True)
+        for c in self.categories: os.makedirs(os.path.join(self.base_path, c), exist_ok=True)
         
         self.load_category()
 
     def log_to_web(self, tag, data):
         msg = f"[{time.strftime('%H:%M:%S')}] [{tag}] {data.hex()}"
-        print(msg)
-        # Fixed: Explicit broadcast for background thread
-        socketio.emit('log_update', {'msg': msg}, namespace='/')
+        socketio.emit('log_update', {'msg': msg})
 
     def load_category(self):
         path = os.path.join(self.base_path, self.categories[self.cat_idx])
-        if not os.path.exists(path): os.makedirs(path, exist_ok=True)
         self.files = sorted(list(set([f for f in os.listdir(path) if f.lower().endswith('.bin')])))
         self.update_ui()
 
@@ -179,7 +179,7 @@ class InfinityPi_Emulator:
                         raw = bytearray(f.read())
                         self.slots[0].update({"name": self.files[self.file_idx], "uid": raw[0:7], "data": raw})
                     self.update_ui()
-                    socketio.emit('slot_update', {'slot': 0, 'name': self.files[self.file_idx]}, namespace='/')
+                    socketio.emit('slot_update', {'slot': 0, 'name': self.files[self.file_idx]})
                 while GPIO.input(27): time.sleep(0.01)
                 self.touch_start = 0
         else:
@@ -187,10 +187,8 @@ class InfinityPi_Emulator:
                 if (now - self.touch_start) < 0.5: self.press_count += 1; self.last_press = now
                 self.touch_start = 0
         if self.press_count > 0 and (now - self.last_press) > 0.3:
-            if self.press_count == 1 and self.files:
-                self.file_idx = (self.file_idx + 1) % len(self.files)
-            elif self.press_count >= 2:
-                self.cat_idx = (self.cat_idx + 1) % 4; self.load_category()
+            if self.press_count == 1 and self.files: self.file_idx = (self.file_idx + 1) % len(self.files)
+            elif self.press_count >= 2: self.cat_idx = (self.cat_idx + 1) % 4; self.load_category()
             self.update_ui(); self.press_count = 0
 
 emulator = InfinityPi_Emulator()
@@ -203,10 +201,7 @@ def get_files():
     res = {}
     for c in emulator.categories:
         p = os.path.join(emulator.base_path, c)
-        if os.path.exists(p):
-            res[c] = sorted(list(set([f for f in os.listdir(p) if f.lower().endswith('.bin')])))
-        else:
-            res[c] = []
+        res[c] = sorted(list(set([f for f in os.listdir(p) if f.lower().endswith('.bin')]))) if os.path.exists(p) else []
     return jsonify(res)
 
 @app.route('/api/place', methods=['POST'])
