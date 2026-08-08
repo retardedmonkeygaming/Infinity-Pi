@@ -75,7 +75,9 @@
   </td>
   </tr>
 </table>
+
 ---
+
 ## -> Hardware Requirements
 
 | Component | Function / Details |
