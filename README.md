@@ -1,138 +1,105 @@
-# 🌌 InfinityPi
+No problem at all! A project this complete deserves a polished, updated
+README.md that reflects all the new high-end features we just implemented.
 
-<p align="center">
-  <b>The High-Fidelity Disney Infinity Base Emulator for Raspberry Pi 4B</b>
-</p>
+Here is the updated InfinityPi documentation.
 
-<p align="center">
-  <img src="https://img.shields.io/badge/Platform-Raspberry%20Pi%204B-red?style=for-the-badge&logo=raspberrypi" alt="Platform" />
-  <img src="https://img.shields.io/badge/Language-Python%203-blue?style=for-the-badge&logo=python" alt="Language" />
-  <img src="https://img.shields.io/badge/Framework-Flask%20%7C%20Socket.IO-black?style=for-the-badge&logo=flask" alt="Framework" />
-  <img src="https://img.shields.io/badge/Status-Active-brightgreen?style=for-the-badge" alt="Status" />
-</p>
+🌌 InfinityPi
 
----
+InfinityPi is a 1:1 functional replication of the physical Disney Infinity Base
+hardware. Built specifically for the Raspberry Pi 4B, it leverages advanced
+emulation mathematics from the RPCS3 Project to satisfy console authentication
+(PS3/PS4) and features a modern, mobile-friendly Web Control Portal for
+real-time figure management.
 
-**InfinityPi** is a 1:1 functional replication of the physical **Disney Infinity Base** hardware. Built specifically for the Raspberry Pi 4B, it leverages the advanced emulation mathematics from the [RPCS3 Project](https://rpcs3.net/) to satisfy console authentication (PS3/PS4) and features a modern, mobile-friendly **Web Control Portal** for real-time figure management.
+🚀 Key Features
 
----
+  - RPCS3 Emulation Core: Strictly replicates the PRNG, scrambling, and checksum
+    logic from Infinity.cpp, ensuring 100% accurate handshakes with PS3/PS4
+    consoles.
+  - Enhanced 9-Slot Stacking: Full support for concurrent virtual items,
+    exceeding standard base limits:
+      - 👥 2x Lead Characters: Player 1 & Player 2 (Slots 0 & 1).
+      - 🌍 3x Hexagonal Stack: Support for up to 3 stacked Playsets, Toy Box
+        Expansions, or Hex Power Discs in the center (Slots 2, 7, & 8).
+      - ⚡ 4x PowerDisc Slots: 2 stacked under Player 1, 2 stacked under Player 2
+        (Slots 3-6).
+  - Persistent State Management: Automatically remembers and re-places all
+    figures across Pi reboots or browser refreshes using state.json.
+  - Integrated File Explorer:
+      - 🔍 Instant Search: Real-time filtering for large figure libraries.
+      - 📤 Web Uploads: Upload .bin figure dumps directly from your phone/PC
+        browser.
+  - Live Handshake Stream: View real-time console communication logs (RECV_AUTH
+    / SENT_AUTH) directly inside the Web UI.
+  - Zero-Config Identity: Masking script clones the hardware descriptor of an
+    official PDP Disney Infinity Base.
 
-## 🚀 Key Features
+🛠️ Hardware Requirements
 
-* **RPCS3 Emulation Core:** Strictly replicates the PRNG (Pseudo-Random Number Generator), scrambling, and checksum logic from `Infinity.cpp`, ensuring 100% accurate handshakes with PS3/PS4 consoles.
-* **Infinity Control Portal:** A sleek, modern Web UI that allows complete portal and base management right from your phone or PC.
-* **Full 7-Slot Stacking Support:** Supports up to 7 concurrent virtual items, mirroring physical base behavior:
-  * 👥 **2x Lead Characters:** Player 1 & Player 2
-  * 🌍 **1x World/Hex Slot:** Playsets or Toy Box Expansions
-  * ⚡ **4x PowerDisc Slots:** 2 stacked under Player 1, 2 stacked under Player 2
-* **Persistent State Management:** Remembers currently placed figures across browser refreshes and session restarts.
-* **Live Handshake Stream:** View real-time console communication logs (`RECV_AUTH` / `SENT_AUTH`) directly inside the Web UI.
-* **Pre-loaded Library Support:** Fully optimized out-of-the-box for Disney Infinity 1.0 and 2.0 `.bin` figure dumps.
+| Component               | Function / Details                                                                                     |
+| :---------------------- | :----------------------------------------------------------------------------------------------------- |
+| **Raspberry Pi 4B**     | Required for high-speed USB-C OTG / Gadget Mode support.                                               |
+| **USB-C Data Cable**    | Connects the Pi 4's USB-C port directly to the target console.                                         |
+| **Power (Recommended)** | Power via GPIO Pins `2/4` (5V) & Pin `6` (GND) to allow the USB-C port to act purely as a data gadget. |
 
----
+⚡ Quick Setup
 
-## 🛠️ Hardware Requirements
+1. Install Dependencies
 
-| Component | Function / Details |
-| :--- | :--- |
-| **Raspberry Pi 4B** | Required for high-speed USB-C OTG / Gadget Mode support. |
-| **USB-C Data Cable** | Connects the Pi 4's USB-C port directly to the target console. |
-| **Power (Recommended)** | Power the Pi via GPIO Pins `2/4` (5V) & Pin `6` (GND) to prevent script interruptions during USB bus resets. |
-
----
-
-## 📁 Directory Structure
-
-The system uses relative pathing to index dumps. Organize your project root as follows:
-
-```text
-InfinityPi/
-├── infinity_pi.py          # Main Emulation Core Engine
-├── base_identity.sh    # USB Identity Configuration Script
-├── templates/
-│   └── index.html      # Responsive Web Control Portal
-└── bins/
-    ├── Characters/     # Figure dumps (.bin)
-    ├── Playsets/       # World & Playset dumps (.bin)
-    ├── PowerDiscs/     # Round & Hex disc dumps (.bin)
-    └── Vehicles/       # Vehicle & Mount disc dumps (.bin)
-```
-
-## ⚡ Quick Setup
-
-### 1. Install Dependencies
-
-Ensure your Pi is running Python 3 and install the core application requirements:
-
-```bash
 sudo pip3 install flask flask-socketio RPi.GPIO --break-system-packages
 
-```
+2. Enable USB Gadget Mode
 
-### 2. Enable USB Gadget Mode
+Add the hardware overlay to /boot/config.txt:
 
-Add the hardware overlay line to `/boot/config.txt`:
-
-```ini
 dtoverlay=dwc2
 
-```
+Append gadget modules to /boot/cmdline.txt (after rootwait):
 
-Append `modules-load=dwc2,libcomposite` directly after `rootwait` in `/boot/cmdline.txt`:
+modules-load=dwc2,libcomposite
 
-```text
-... rootwait modules-load=dwc2,libcomposite ...
+3. Initialize USB Identity
 
-```
+Run the configuration script to mask the Pi as an official base:
 
----
-
-### 3. Mask USB Identity
-
-Run the configuration script to mask the Pi's USB descriptor as an official PDP Disney Infinity Base:
-
-```bash
 sudo bash base_identity.sh
 
-```
+4. Launch the Portal
 
----
-
-### 4. Launch the Portal
-
-Start the main emulation engine with root permissions:
-
-```bash
 sudo python3 infinity_pi.py
 
-```
+🌐 Access the Control Panel: Open any browser and navigate to http://<your-pi-ip>
 
-> 🌐 **Access the Control Panel:** Open any browser on your mobile phone or PC and navigate to your Pi's IP address:
-> `http://<your-pi-ip>`
+📂 Directory Structure
 
----
+InfinityPi/
+├── infinity_pi.py      # Main Emulation Core & Flask Server
+├── base_identity.sh    # USB Identity Configuration Script
+├── state.json          # Persistent slot storage (auto-generated)
+├── templates/
+│   └── index.html      # Responsive Search & Control Portal
+└── bins/               # Figure Library (.bin dumps)
+    ├── 1.0/
+    ├── 2.0/
+    └── 3.0/
+        ├── Characters/
+        ├── Playsets/
+        └── PowerDiscs/
 
-## 📜 Credits & Acknowledgments
+📜 Credits & Acknowledgments
 
-* 🎮 **RPCS3 Team:** Core logic, PRNG, and scrambling algorithms ported directly from the RPCS3 Disney Infinity implementation.
-* 🛠️ **Project DIRE:** Originally inspired by the original hardware research and concepts of Project DIRE.
-* 🤖 **AI Collaboration:** Made with the help of AI (sorry guys. I am a hobbyist only 😔)
-* **Assistance:** Please contact me on Instagram or open an issue for any assistance.
+  - 🎮 RPCS3 Team: Core logic, PRNG, and scrambling algorithms.
+  - 🛠️ Project DIRE: Original hardware research and base concepts.
+  - 🤖 AI Collaboration: Technical logic implementation assistance.
 
----
+⚖️ License & Contact
 
-## ⚖️ License & Contact
+| Attribute     | Details                                                         |
+| ------------- | --------------------------------------------------------------- |
+| **Developer** | [@vxprxx](https://instagram.com/vxprxx)                         |
+| **GitHub**    | [retardedmonkeygaming](https://github.com/retardedmonkeygaming) |
+| **Status**    | Open Source / Hobbyist                                          |
 
-| Attribute | Details |
-| --- | --- |
-| **Developer** | [@vxprxx](https://www.google.com/search?q=https://instagram.com/vxprxx) |
-| **GitHub Profile** | [retardedmonkeygaming](https://www.google.com/search?q=https://github.com/retardedmonkeygaming) |
-| **Status** | Free to use for all |
-
----
-
-> ⚠️ **Disclaimer:** *This project is an independent open-source hobbyist initiative and is not affiliated, associated, authorized, endorsed by, or in any way officially connected with Disney, Avalanche Software, or Sony Interactive Entertainment.*
-
-```
-
-```
+⚠️ Disclaimer: This project is an independent open-source hobbyist initiative
+and is not affiliated with Disney, Avalanche Software, or Sony Interactive
+Entertainment.
