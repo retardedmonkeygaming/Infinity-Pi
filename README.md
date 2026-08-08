@@ -1,8 +1,3 @@
-No problem at all! A project this complete deserves a polished, updated
-README.md that reflects all the new high-end features we just implemented.
-
-Here is the updated InfinityPi documentation.
-
 🌌 InfinityPi
 
 InfinityPi is a 1:1 functional replication of the physical Disney Infinity Base
