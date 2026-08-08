@@ -8,11 +8,10 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { background: #02040a; color: #94a3b8; font-family: system-ui, -apple-system, sans-serif; -webkit-tap-highlight-color: transparent; min-height: 100vh; display: flex; flex-direction: column; }
-        .main-container { flex: 1; }
         .log-box { height: 160px; background: #000; font-family: monospace; font-size: 10px; color: #22c55e; border: 1px solid #1e293b; border-radius: 12px; overflow-y: auto; }
         .figure-card { background: #0f172a; border: 1px solid #1e293b; min-height: 100px; display: flex; align-items: center; justify-content: center; text-align: center; padding: 12px; transition: 0.2s; border-radius: 16px; cursor: pointer; }
         .figure-card:hover { border-color: #3b82f6; background: #131c2e; transform: translateY(-2px); }
-        .card-text { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: 0.8rem; line-height: 1.2; font-weight: 700; color: #f8fafc; }
+        .card-text { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: 0.8rem; font-weight: 700; color: #f8fafc; }
         .slot-box { background: #0f172a; border: 2px dashed #1e293b; transition: 0.3s; cursor: pointer; position: relative; }
         .active-slot { border-color: #3b82f6 !important; background: #172554 !important; box-shadow: 0 0 20px rgba(59, 130, 246, 0.15); }
         .v-btn { background: #0f172a; border: 1px solid #1e293b; color: #475569; transition: 0.2s; }
@@ -20,7 +19,7 @@
     </style>
 </head>
 <body>
-    <div class="main-container p-4 md:p-8 max-w-6xl mx-auto w-full">
+    <div class="p-4 md:p-8 max-w-6xl mx-auto w-full flex-1">
         <header class="flex flex-col sm:flex-row justify-between items-center mb-10 gap-6">
             <div class="flex items-center gap-6">
                 <h1 class="text-4xl font-black italic text-white tracking-tighter">InfinityPi</h1>
@@ -29,45 +28,22 @@
             <input type="text" id="search" placeholder="Search library..." class="w-full sm:w-72 bg-slate-900 border border-slate-800 rounded-2xl px-6 py-3 text-sm focus:outline-none">
         </header>
 
-        <h2 class="text-[10px] uppercase font-black text-slate-600 mb-4 tracking-widest ml-1">Characters</h2>
         <div class="grid grid-cols-2 gap-4 mb-8">
-            <div id="slot-0" onclick="setSlot(0)" class="slot-box p-6 rounded-3xl text-center active-slot">
-                <div class="text-[9px] uppercase font-black text-blue-500/50 mb-1">Player 1</div>
-                <div id="name-0" class="font-bold text-blue-400 text-lg truncate">Empty</div>
-                <button onclick="event.stopPropagation(); clearSlot(0)" class="absolute top-3 right-3 text-slate-700 font-bold">✕</button>
-            </div>
-            <div id="slot-1" onclick="setSlot(1)" class="slot-box p-6 rounded-3xl text-center">
-                <div class="text-[9px] uppercase font-black text-purple-500/50 mb-1">Player 2</div>
-                <div id="name-1" class="font-bold text-purple-400 text-lg truncate">Empty</div>
-                <button onclick="event.stopPropagation(); clearSlot(1)" class="absolute top-3 right-3 text-slate-700 font-bold">✕</button>
-            </div>
+            <div id="slot-0" onclick="setSlot(0)" class="slot-box p-6 rounded-3xl text-center active-slot"><div class="text-[9px] uppercase font-black text-blue-500/50 mb-1">Player 1</div><div id="name-0" class="font-bold text-blue-400 text-lg truncate">Empty</div><button onclick="event.stopPropagation(); clearSlot(0)" class="absolute top-3 right-3 text-slate-700 font-bold">✕</button></div>
+            <div id="slot-1" onclick="setSlot(1)" class="slot-box p-6 rounded-3xl text-center"><div class="text-[9px] uppercase font-black text-purple-500/50 mb-1">Player 2</div><div id="name-1" class="font-bold text-purple-400 text-lg truncate">Empty</div><button onclick="event.stopPropagation(); clearSlot(1)" class="absolute top-3 right-3 text-slate-700 font-bold">✕</button></div>
         </div>
 
-        <h2 class="text-[10px] uppercase font-black text-slate-600 mb-4 tracking-widest ml-1">Hex Slots</h2>
         <div class="grid grid-cols-3 gap-4 mb-8">
-            <div id="slot-2" onclick="setSlot(2)" class="slot-box p-6 rounded-3xl text-center">
-                <div class="text-[9px] uppercase font-black text-emerald-500/50 mb-1">Hex 1</div>
-                <div id="name-2" class="font-bold text-emerald-400 text-sm truncate">Empty</div>
-                <button onclick="event.stopPropagation(); clearSlot(2)" class="absolute top-3 right-3 text-slate-700 font-bold">✕</button>
-            </div>
-            <div id="slot-3" onclick="setSlot(3)" class="slot-box p-6 rounded-3xl text-center">
-                <div class="text-[9px] uppercase font-black text-emerald-500/50 mb-1">Hex 2</div>
-                <div id="name-3" class="font-bold text-emerald-400 text-sm truncate">Empty</div>
-                <button onclick="event.stopPropagation(); clearSlot(3)" class="absolute top-3 right-3 text-slate-700 font-bold">✕</button>
-            </div>
-            <div id="slot-4" onclick="setSlot(4)" class="slot-box p-6 rounded-3xl text-center">
-                <div class="text-[9px] uppercase font-black text-emerald-500/50 mb-1">Hex 3</div>
-                <div id="name-4" class="font-bold text-emerald-400 text-sm truncate">Empty</div>
-                <button onclick="event.stopPropagation(); clearSlot(4)" class="absolute top-3 right-3 text-slate-700 font-bold">✕</button>
-            </div>
+            <div id="slot-2" onclick="setSlot(2)" class="slot-box p-6 rounded-3xl text-center"><div class="text-[9px] uppercase font-black text-emerald-500/50 mb-1">Hex 1</div><div id="name-2" class="font-bold text-emerald-400 text-sm truncate">Empty</div><button onclick="event.stopPropagation(); clearSlot(2)" class="absolute top-3 right-3 text-slate-700 font-bold">✕</button></div>
+            <div id="slot-3" onclick="setSlot(3)" class="slot-box p-6 rounded-3xl text-center"><div class="text-[9px] uppercase font-black text-emerald-500/50 mb-1">Hex 2</div><div id="name-3" class="font-bold text-emerald-400 text-sm truncate">Empty</div><button onclick="event.stopPropagation(); clearSlot(3)" class="absolute top-3 right-3 text-slate-700 font-bold">✕</button></div>
+            <div id="slot-4" onclick="setSlot(4)" class="slot-box p-6 rounded-3xl text-center"><div class="text-[9px] uppercase font-black text-emerald-500/50 mb-1">Hex 3</div><div id="name-4" class="font-bold text-emerald-400 text-sm truncate">Empty</div><button onclick="event.stopPropagation(); clearSlot(4)" class="absolute top-3 right-3 text-slate-700 font-bold">✕</button></div>
         </div>
 
-        <h2 class="text-[10px] uppercase font-black text-slate-600 mb-4 tracking-widest ml-1">Stacked Power Discs</h2>
         <div class="grid grid-cols-4 gap-3 mb-12">
-            <div id="slot-5" onclick="setSlot(5)" class="slot-box p-4 rounded-2xl text-center"><div class="text-[8px] uppercase text-slate-600 font-bold">P1 D1</div><div id="name-5" class="text-xs font-bold text-slate-400 truncate">Empty</div><button onclick="event.stopPropagation(); clearSlot(5)" class="absolute top-2 right-2 text-slate-800 text-[10px]">✕</button></div>
-            <div id="slot-6" onclick="setSlot(6)" class="slot-box p-4 rounded-2xl text-center"><div class="text-[8px] uppercase text-slate-600 font-bold">P1 D2</div><div id="name-6" class="text-xs font-bold text-slate-400 truncate">Empty</div><button onclick="event.stopPropagation(); clearSlot(6)" class="absolute top-2 right-2 text-slate-800 text-[10px]">✕</button></div>
-            <div id="slot-7" onclick="setSlot(7)" class="slot-box p-4 rounded-2xl text-center"><div class="text-[8px] uppercase text-slate-600 font-bold">P2 D1</div><div id="name-7" class="text-xs font-bold text-slate-400 truncate">Empty</div><button onclick="event.stopPropagation(); clearSlot(7)" class="absolute top-2 right-2 text-slate-800 text-[10px]">✕</button></div>
-            <div id="slot-8" onclick="setSlot(8)" class="slot-box p-4 rounded-2xl text-center"><div class="text-[8px] uppercase text-slate-600 font-bold">P2 D2</div><div id="name-8" class="text-xs font-bold text-slate-400 truncate">Empty</div><button onclick="event.stopPropagation(); clearSlot(8)" class="absolute top-2 right-2 text-slate-800 text-[10px]">✕</button></div>
+            <div id="slot-5" onclick="setSlot(5)" class="slot-box p-4 rounded-2xl text-center"><div class="text-[8px] font-bold">P1 D1</div><div id="name-5" class="text-xs font-bold truncate">Empty</div><button onclick="event.stopPropagation(); clearSlot(5)" class="absolute top-2 right-2 text-slate-800 text-[10px]">✕</button></div>
+            <div id="slot-6" onclick="setSlot(6)" class="slot-box p-4 rounded-2xl text-center"><div class="text-[8px] font-bold">P1 D2</div><div id="name-6" class="text-xs font-bold truncate">Empty</div><button onclick="event.stopPropagation(); clearSlot(6)" class="absolute top-2 right-2 text-slate-800 text-[10px]">✕</button></div>
+            <div id="slot-7" onclick="setSlot(7)" class="slot-box p-4 rounded-2xl text-center"><div class="text-[8px] font-bold">P2 D1</div><div id="name-7" class="text-xs font-bold truncate">Empty</div><button onclick="event.stopPropagation(); clearSlot(7)" class="absolute top-2 right-2 text-slate-800 text-[10px]">✕</button></div>
+            <div id="slot-8" onclick="setSlot(8)" class="slot-box p-4 rounded-2xl text-center"><div class="text-[8px] font-bold">P2 D2</div><div id="name-8" class="text-xs font-bold truncate">Empty</div><button onclick="event.stopPropagation(); clearSlot(8)" class="absolute top-2 right-2 text-slate-800 text-[10px]">✕</button></div>
         </div>
 
         <div id="version-tabs" class="flex gap-2 mb-6 border-b border-slate-900 pb-3">
@@ -77,14 +53,7 @@
         </div>
         <div id="tabs" class="flex gap-2 mb-6 border-b border-slate-900 pb-3 overflow-x-auto no-scrollbar"></div>
         <div id="grid" class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-4 mb-12"></div>
-        
-        <div class="flex justify-between items-center mb-2">
-            <h3 class="text-[10px] uppercase font-black text-slate-700 tracking-widest">Logs</h3>
-            <div class="flex gap-2">
-                <button id="l-slot" onclick="setLog('SLOT')" class="bg-blue-600 text-white text-[9px] px-3 py-1 rounded-lg">Slot</button>
-                <button id="l-auth" onclick="setLog('AUTH')" class="bg-slate-900 text-slate-500 text-[9px] px-3 py-1 rounded-lg">Auth</button>
-            </div>
-        </div>
+        <div class="flex justify-between items-center mb-2"><h3 class="text-[10px] uppercase font-black">Logs</h3><div class="flex gap-2"><button id="l-slot" onclick="setLog('SLOT')" class="bg-blue-600 text-white text-[9px] px-3 py-1 rounded-lg">Slot</button><button id="l-auth" onclick="setLog('AUTH')" class="bg-slate-900 text-slate-500 text-[9px] px-3 py-1 rounded-lg">Auth</button></div></div>
         <div class="log-box p-6" id="logs"></div>
     </div>
 
@@ -98,18 +67,29 @@
             if(l.childNodes.length > 50) l.removeChild(l.firstChild); l.scrollTop = l.scrollHeight;
         });
 
-        socket.on('slot_update', d => { const el = document.getElementById(`name-${d.slot}`); if(el) el.innerText = d.name.replace('.bin',''); });
+        socket.on('slot_update', d => {
+            const el = document.getElementById(`name-${d.slot}`);
+            if(el) el.innerText = d.name.replace('.bin','');
+        });
 
-        function setSlot(id) { document.querySelectorAll('.slot-box').forEach(el => el.classList.remove('active-slot')); document.getElementById(`slot-${id}`).classList.add('active-slot'); currentSlot = id; }
-        
+        function setSlot(id) {
+            document.querySelectorAll('.slot-box').forEach(el => el.classList.remove('active-slot'));
+            document.getElementById(`slot-${id}`).classList.add('active-slot');
+            currentSlot = id;
+        }
+
         async function setLog(mode) {
-            document.getElementById('logs').innerHTML = "";
             document.getElementById('l-slot').className = mode === 'SLOT' ? "bg-blue-600 text-white text-[9px] px-3 py-1 rounded-lg" : "bg-slate-900 text-slate-500 text-[9px] px-3 py-1 rounded-lg";
             document.getElementById('l-auth').className = mode === 'AUTH' ? "bg-blue-600 text-white text-[9px] px-3 py-1 rounded-lg" : "bg-slate-900 text-slate-500 text-[9px] px-3 py-1 rounded-lg";
             await fetch('/api/log_mode', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({mode: mode}) });
         }
 
-        function setVersion(v) { currentVersion = v; document.querySelectorAll('.v-btn').forEach(btn => btn.classList.remove('active')); document.getElementById(`vbtn-${v}`).classList.add('active'); updateCategoryTabs(); }
+        function setVersion(v) {
+            currentVersion = v;
+            document.querySelectorAll('.v-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`vbtn-${v}`).classList.add('active');
+            updateCategoryTabs();
+        }
 
         function updateCategoryTabs() {
             const tabs = document.getElementById('tabs'); tabs.innerHTML = "";
@@ -123,15 +103,17 @@
         }
 
         function filter(cat) {
-            currentCategory = cat; document.querySelectorAll('#tabs button').forEach(b => { b.classList.remove('bg-blue-600', 'text-white'); b.classList.add('bg-slate-900', 'text-slate-500'); });
+            currentCategory = cat;
+            document.querySelectorAll('#tabs button').forEach(b => { b.classList.remove('bg-blue-600', 'text-white'); b.classList.add('bg-slate-900', 'text-slate-500'); });
             const btn = document.getElementById(`btn-${cat}`); if(btn) { btn.classList.remove('bg-slate-900', 'text-slate-500'); btn.classList.add('bg-blue-600', 'text-white'); }
             render();
         }
 
         async function init() {
-            const slotRes = await fetch('/api/slots'), slots = await slotRes.json();
+            const resSlots = await fetch('/api/slots'); const slots = await resSlots.json();
             Object.entries(slots).forEach(([id, name]) => { const el = document.getElementById(`name-${id}`); if(el) el.innerText = name.replace('.bin',''); });
-            const res = await fetch('/api/files'); allFiles = await res.json(); setVersion('1.0');
+            const resFiles = await fetch('/api/files'); allFiles = await resFiles.json();
+            setVersion('1.0');
         }
 
         function render(search = "") {
@@ -146,9 +128,18 @@
             });
         }
 
-        async function place(file) { await fetch('/api/place', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ slot: currentSlot, version: currentVersion, category: currentCategory, filename: file }) }); }
-        async function clearSlot(id) { await fetch('/api/remove', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({slot: id}) }); }
-        async function removeAll() { await fetch('/api/remove_all', { method: 'POST' }); }
+        async function place(file) {
+            await fetch('/api/place', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ slot: currentSlot, version: currentVersion, category: currentCategory, filename: file }) });
+        }
+
+        async function clearSlot(id) {
+            await fetch('/api/remove', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({slot: id}) });
+        }
+
+        async function removeAll() {
+            await fetch('/api/remove_all', { method: 'POST' });
+        }
+
         document.getElementById('search').oninput = e => render(e.target.value);
         init();
     </script>
