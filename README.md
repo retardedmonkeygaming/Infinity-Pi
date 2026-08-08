@@ -59,7 +59,7 @@
 | Component | Function / Details |
 | :--- | :--- |
 | **Raspberry Pi (Check supported model list)** | Required for their OTG (Gadget Mode) controller. |
-| **USB Data Cable (Depending on Pi Model)** | Connects the Pi's USB port straight into your console. |
+| **USB Data Cable (Depending on Pi Model)** | Connects the Pi's USB port straight into your console. Use a USB-A Cable for an RPI1A and Micro-USB for all Pi-Zero Models. |
 | **External Power (Recommended)** | Power the Pi (those with GPIO) via Pins `2/4` (5V) & Pin `6` (GND) so the USB-C port handles pure data without dropping during console resets. |
 
 ---
