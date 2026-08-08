@@ -40,10 +40,14 @@
 
 ---
 
-## -> Supported Raspberry Pi Models.
+<div align="center" style="display: flex; justify-content: center; gap: 40px; align-items: flex-start;">
 
-| RPI | Support |
-| --- | --- |
+<div>
+
+### 🔌 Supported Raspberry Pi Models
+
+| RPI | Status |
+| :--- | :--- |
 | **Raspberry Pi 4B** | Supported |
 | **Raspberry Pi 5** | Supported |
 | **Raspberry Pi 3A** | Supported |
@@ -52,6 +56,26 @@
 | **Raspberry Pi 3B(+)** | Unsupported |
 | **Raspberry Pi 2B** | Unsupported |
 | **Raspberry Pi 1B(+)** | Unsupported |
+
+</div>
+
+<div>
+
+### 🎮 Supported Consoles
+
+| Console | Status |
+| :--- | :--- |
+| **PlayStation 4** | Supported |
+| **PlayStation 3** | Supported |
+| **Nintendo Wii U** | Supported |
+| **Nintendo Wii** | Supported |
+| **Xbox One / Series X** | Unsupported |
+| **Xbox 360** | Unsupported |
+| **Nintendo Switch** | Unsupported |
+
+</div>
+
+</div>
 
 ---
 ## -> Hardware Requirements
