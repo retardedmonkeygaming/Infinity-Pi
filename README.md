@@ -12,7 +12,6 @@
 </p>
 
 ---
-
 **InfinityPi** turns a Raspberry Pi into a full-fledged **Disney Infinity Base** emulator. Built to work seamlessly with **PS3, PS4, Wii, and Wii U**, it ports the exact authentication math from the [RPCS3 Infinity Base Emulator](https://rpcs3.net/) to talk to your console directly over USB. You control your entire base instantly from a mobile-friendly web app on your phone or PC.
 
 ## 📱 Web UI Preview
