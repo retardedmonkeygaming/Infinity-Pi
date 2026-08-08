@@ -90,10 +90,8 @@ class InfinityPi_Emulator:
         self.versions = ["1.0", "2.0", "3.0"]
         self.categories = ["Characters", "Playsets", "PowerDiscs", "ToyBoxes"]
         
-        # 9 Slots: 0-1 Leads, 2,7,8 Hex Stack, 3-4 P1 Discs, 5-6 P2 Discs
         self.slots = {}
         for i in range(9):
-            # SID Logic: Leads/P1 Discs (0x20), P2/P2 Discs (0x30), Hexes (0x10)
             sid = 0x20 if i in [0,3,4] else 0x30 if i in [1,5,6] else 0x10
             self.slots[i] = {"name": "Empty", "version": "1.0", "category": None, "uid": b"\x00"*7, "data": None, "sid": sid, "path": None}
         
@@ -144,9 +142,11 @@ class InfinityPi_Emulator:
                             q_result[0:24] = [0xaa, 0x15, 0x00, 0x00, 0x0f, 0x01, 0x00, 0x03, 0x02, 0x09, 0x09, 0x43,
                                               0x20, 0x32, 0x62, 0x36, 0x36, 0x4b, 0x34, 0x99, 0x67, 0x31, 0x93, 0x8c]
                         elif command == 0x81:
+                            self.log_to_web("RECV_AUTH", buf, "AUTH") # LOG AUTH
                             self.base.descramble_and_seed(buf, sequence, q_result)
                         elif command == 0x83:
                             self.base.get_next_and_scramble(sequence, q_result)
+                            self.log_to_web("SENT_AUTH", q_result, "AUTH") # LOG AUTH
                         elif command in [0x90, 0x92, 0x93, 0x95, 0x96, 0xB5]:
                             self.base.get_blank_response(sequence, q_result)
                         elif command == 0xA1: 
@@ -187,6 +187,11 @@ emulator = InfinityPi_Emulator()
 @app.route('/')
 def index(): return render_template('index.html')
 
+@app.route('/api/log_mode', methods=['POST'])
+def set_log_mode():
+    emulator.log_mode = request.json.get('mode', 'SLOT')
+    return jsonify({"status": "ok", "mode": emulator.log_mode})
+
 @app.route('/api/upload', methods=['POST'])
 def upload_file():
     if 'file' not in request.files: return jsonify({"status": "no file"}), 400
@@ -196,6 +201,7 @@ def upload_file():
     if f and ver and cat:
         filename = secure_filename(f.filename)
         f.save(os.path.join(emulator.base_path, ver, cat, filename))
+        emulator.log_to_web("UPLOAD", f"Saved {filename} to {ver}/{cat}", "SLOT")
         return jsonify({"status": "ok"})
     return jsonify({"status": "error"}), 400
 
@@ -225,6 +231,7 @@ def web_place():
                 emulator.slots[s_idx].update({"name": d['filename'], "version": d['version'], "category": d['category'], "uid": raw[0:7], "data": raw, "path": path})
                 emulator.save_state()
         socketio.emit('slot_update', {'slot': s_idx, 'name': d['filename']})
+        emulator.log_to_web("SLOT_PLACE", f"Slot {s_idx}: {d['filename']}", "SLOT")
         return jsonify({"status": "ok"})
     except Exception as e: return jsonify({"status": "error", "message": str(e)}), 500
 
@@ -235,6 +242,7 @@ def web_remove():
         emulator.slots[s_idx].update({"name": "Empty", "data": None, "path": None})
         emulator.save_state()
     socketio.emit('slot_update', {'slot': s_idx, 'name': "Empty"})
+    emulator.log_to_web("SLOT_REMOVE", f"Cleared Slot {s_idx}", "SLOT")
     return jsonify({"status": "ok"})
 
 @app.route('/api/remove_all', methods=['POST'])
@@ -243,6 +251,7 @@ def web_remove_all():
         for i in range(9): emulator.slots[i].update({"name": "Empty", "data": None, "path": None})
         emulator.save_state()
     for i in range(9): socketio.emit('slot_update', {'slot': i, 'name': "Empty"})
+    emulator.log_to_web("SLOT_REMOVE", "Cleared All Slots", "SLOT")
     return jsonify({"status": "ok"})
 
 if __name__ == "__main__":
