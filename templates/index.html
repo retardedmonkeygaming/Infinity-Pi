@@ -96,6 +96,15 @@
         </div>
         <div id="tabs" class="flex gap-2 mb-6 border-b border-slate-900 pb-3 overflow-x-auto no-scrollbar"></div>
         <div id="grid" class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-4 mb-12"></div>
+        
+        <!-- Log System with Switch -->
+        <div class="flex justify-between items-center mb-2">
+            <h3 class="text-[10px] uppercase font-black text-slate-700 tracking-widest">System Logs</h3>
+            <div class="flex gap-2">
+                <button id="log-slot" onclick="setLogMode('SLOT')" class="bg-blue-600 text-white text-[9px] px-3 py-1 rounded-lg font-bold">Slot Logs</button>
+                <button id="log-auth" onclick="setLogMode('AUTH')" class="bg-slate-900 text-slate-500 text-[9px] px-3 py-1 rounded-lg font-bold">Auth Logs</button>
+            </div>
+        </div>
         <div class="log-box p-6" id="logs"></div>
     </div>
 
@@ -122,6 +131,14 @@
         function setSlot(id) {
             document.querySelectorAll('.slot-box').forEach(el => el.classList.remove('active-slot'));
             document.getElementById(`slot-${id}`).classList.add('active-slot'); currentSlot = id;
+        }
+
+        async function setLogMode(mode) {
+            document.getElementById('logs').innerHTML = ""; // Clear logs on switch
+            const isAuth = mode === 'AUTH';
+            document.getElementById('log-auth').className = isAuth ? "bg-blue-600 text-white text-[9px] px-3 py-1 rounded-lg font-bold" : "bg-slate-900 text-slate-500 text-[9px] px-3 py-1 rounded-lg font-bold";
+            document.getElementById('log-slot').className = !isAuth ? "bg-blue-600 text-white text-[9px] px-3 py-1 rounded-lg font-bold" : "bg-slate-900 text-slate-500 text-[9px] px-3 py-1 rounded-lg font-bold";
+            await fetch('/api/log_mode', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({mode: mode}) });
         }
 
         function setVersion(v) {
