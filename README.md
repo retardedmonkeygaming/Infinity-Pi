@@ -1,54 +1,73 @@
-# InfinityPi 🌌
+# 🌌 InfinityPi
 
-InfinityPi is a 1:1 functional software replication of the physical **Disney Infinity Base**. Designed specifically for the Raspberry Pi 4B, it runs the low-level crypto and authentication logic directly on the Pi's USB-C OTG port—allowing you to swap virtual figures in real-time via a mobile web app without needing physical toys or bases.
+<p align="center">
+  <b>The High-Fidelity Disney Infinity Base Emulator for Raspberry Pi</b>
+</p>
 
-It natively supports **Wii, Wii U, PS3, and PS4** consoles using standard `.bin` dumps.
-
----
-
-## 💡 How It Works
-
-Physical Disney Infinity bases rely on specific PRNG, packet scrambling, and checksum math during initial console handshakes. InfinityPi uses the reverse-engineered `Infinity.cpp` implementation from the [RPCS3 Project](https://rpcs3.net/) combined with Linux's `ConfigFS` USB gadget framework.
-
-By emulating the exact vendor descriptors of a PDP Disney Infinity base, the target console accepts the Pi 4B as real hardware. A lightweight Flask backend then manages virtual placement across all 9 internal base slots.
-
----
-
-## ⚡ Key Capabilities
-
-* **Authentic USB Handshaking:** Replicates the exact scrambling algorithms for 100% reliable console pairing on Wii, Wii U, PS3, and PS4.
-* **Expanded 9-Slot Virtual Stacking:**
-  * **Slots 0 & 1:** Player 1 & Player 2 Characters
-  * **Slots 2, 7, & 8:** Center Hexagonal Stack (Up to 3 concurrent Playsets, Expansions, or Hex Discs)
-  * **Slots 3–6:** Player PowerDiscs (2 stacked per player slot)
-* **Instant Web UI:** Accessible from any phone, tablet, or desktop browser on your local network. Features instant search filtering and live file uploading for new `.bin` dumps.
-* **Persistent Base State:** Automatically saves active slots to disk (`state.json`). Powering off the Pi or refreshing your browser won't clear your active figures.
-* **Live Auth Stream:** Debug raw USB packet exchanges (`RECV_AUTH` / `SENT_AUTH`) live in the web control panel.
+<p align="center">
+  <img src="https://img.shields.io/badge/Platform-Raspberry%20Pi%204B-red?style=for-the-badge&logo=raspberrypi" alt="Platform" />
+  <img src="https://img.shields.io/badge/Language-Python%203-blue?style=for-the-badge&logo=python" alt="Language" />
+  <img src="https://img.shields.io/badge/Framework-Flask%20%7C%20Socket.IO-black?style=for-the-badge&logo=flask" alt="Framework" />
+  <img src="https://img.shields.io/badge/Status-Active-brightgreen?style=for-the-badge" alt="Status" />
+</p>
 
 ---
 
-## 🛠️ Hardware Requirements
+**InfinityPi** turns a Raspberry Pi into a full-fledged **Disney Infinity Base** emulator. Built to work seamlessly with **PS3, PS4, Wii, and Wii U**, it ports the exact authentication math from the [RPCS3 Infinity Base Emulator](https://rpcs3.net/) to talk to your console directly over USB. You control your entire base instantly from a mobile-friendly web app on your phone or PC.
 
-| Component | Purpose |
+---
+
+## -> What It Does
+
+* **Cross-Console Support:** Fully compatible with **PS3, PS4, Nintendo Wii, and Wii U** hardware out of the box.
+* **RPCS3 Emulation Core:** Uses authentic PRNG, scrambling, and checksum math for instant, reliable console handshakes.
+* **Complete Pre-loaded Library:** Comes packed with complete, organized `.bin` figure dumps across **Disney Infinity 1.0, 2.0, and 3.0**. Everything is neatly sorted into folders so you can find characters, playsets, or power discs in seconds (choosable through the WebUI)
+* **Mobile-First Web UI:** Built specifically to run smooth on your phone browser while you play. Tap figures on your screen to place or remove them on the fly.
+* **Enhanced 9-Slot Stacking:** Exceeds standard base limits with 9 active slots running at once:
+  * 👥 **2x Player Slots:** Player 1 & Player 2 *(Slots 0 & 1)*
+  * -> **3x Center Slots:** Stack up to 3 Playsets, Toy Box Expansions, or Hex Power Discs simultaneously *(Slots 2, 7, & 8)*
+  * ⚡ **4x Ability Slots:** 2 stacked under Player 1; 2 stacked under Player 2 *(Slots 3–6)*
+* **In-Built File Manager:** Search large libraries instantly, or upload missing `.bin` dumps straight from your phone (or PC) browser.
+* **Auto Save/Restore:** `state.json` tracks your active figures so everything re-places automatically if you reboot the Pi or refresh your browser.
+
+---
+
+## -> Supported Raspberry Pi Models.
+
+| RPI | Support |
+| --- | --- |
+| **Raspberry Pi 4B** | Supported |
+| **Raspberry Pi 5** | Supported |
+| **Raspberry Pi 3A** | Supported |
+| **Raspberry Pi Zero** | Supported |
+| **Raspberry Pi Zero W/2W** | Supported |
+| **Raspberry Pi 3B(+)* | Unsupported |
+| **Raspberry Pi 2B** | Unupported |
+| **Raspberry Pi 1B(+)* | Unsupported |
+
+---
+## -> Hardware Requirements
+
+| Component | Function / Details |
 | :--- | :--- |
-| **Raspberry Pi 4B** | Required for high-speed USB-C OTG / Gadget mode capabilities. |
-| **USB-C Data Cable** | Plugs directly from the Pi 4's USB-C port into your console. |
-| **Power (5V GPIO)** | **Recommended:** Power the Pi via GPIO Pin 2/4 (5V) & Pin 6 (GND). This keeps the USB-C port acting purely as a data line and prevents power-cycle drops during console USB resets. |
+| **Raspberry Pi (Check supported model list)** | Required for their OTG (Gadget Mode) controller. |
+| **USB-C Data Cable** | Connects the Pi's USB port straight into your console. |
+| **External Power (Recommended)** | Power the Pi (those with GPIO) via Pins `2/4` (5V) & Pin `6` (GND) so the USB-C port handles pure data without dropping during console resets. |
 
 ---
 
-## 📁 Directory Layout
+## 📁 Directory Structure
 
-Organize your `.bin` library inside the `bins/` directory. Path resolution is relative to the core script:
+Everything is pre-organized by game release and item category:
 
 ```text
 InfinityPi/
-├── infinity_pi.py      # Core Emulation Logic & Flask App
-├── base_identity.sh    # ConfigFS USB Gadget Setup Script
-├── state.json          # Active base slot storage (Auto-generated)
+├── infinity_pi.py      # Main emulation engine & server
+├── base_identity.sh    # USB identity setup script
+├── state.json          # Remembers active slots (auto-created)
 ├── templates/
-│   └── index.html      # Responsive Web Control Panel
-└── bins/               # Dump storage directory
+│   └── index.html      # Mobile Web UI & search panel
+└── bins/               # Pre-loaded figure dumps
     ├── 1.0/
     ├── 2.0/
     └── 3.0/
@@ -60,68 +79,80 @@ InfinityPi/
 
 ---
 
-## 🚀 Installation & Running
+## ⚡ Quick Setup
 
-### 1. Install System Dependencies
+### 1. Install Dependencies
 
-Ensure you are running a 64-bit Pi OS installation with Python 3:
+Download the necessary Python libraries on your Pi:
 
 ```bash
 sudo pip3 install flask flask-socketio RPi.GPIO --break-system-packages
 
 ```
 
-### 2. Configure USB Gadget Mode
+### 2. Enable USB Gadget Mode
 
-Enable the `dwc2` overlay in `/boot/config.txt`:
+Add the overlay to `/boot/firmware/config.txt`:
 
 ```ini
 dtoverlay=dwc2
 
 ```
 
-Enable composite driver loading in `/boot/cmdline.txt` (add it immediately after `rootwait` on the same line):
+Then append the gadget driver right after `rootwait` in `/boot/firmware/cmdline.txt`:
 
 ```text
-modules-load=dwc2,libcomposite
+... rootwait modules-load=dwc2,libcomposite ...
 
 ```
 
-### 3. Initialize Base Identity
+---
 
-Execute the gadget initialization script to mask the Pi as an official USB peripheral:
+### 3. Mask USB Identity
+
+Run the shell script to spoof the Pi as an official PDP Disney Infinity Base:
 
 ```bash
 sudo bash base_identity.sh
 
 ```
 
-### 4. Start the Server
+---
 
-Run the main process with root permissions (required for direct USB gadget interaction):
+### 4. Run It
+
+Start the emulator with root privileges:
 
 ```bash
 sudo python3 infinity_pi.py
 
 ```
 
-Open your browser and navigate to `http://<your-pi-ip>` or `http://raspberrypi.local:5000` to access the portal.
+> 🌐 **Open the Web UI:** Pull up a browser on your phone or PC and head to:
+> `http://<your-pi-ip>`
 
 ---
 
-## 📜 Credits
+## 📜 Credits & References
 
-* **RPCS3 Team:** Core reverse-engineering of the Disney Infinity base hardware interface (`Infinity.cpp`).
-* **Project DIRE:** Original hardware concepts and research on base emulation.
+* **RPCS3 Team:** Core logic, PRNG, and scrambling algorithms ported from `Infinity.cpp`.
+* **Project DIRE:** Original hardware research and concepts.
+* **Community:** Developed as an open, free preservation tool for retro gaming.
 
 ---
 
-## ⚖️ License & Disclaimer
+## ⚖️ Contact
 
-Developed by [@vxprxx](https://instagram.com/vxprxx) | Repo: [retardedmonkeygaming](https://github.com/retardedmonkeygaming)
+| Attribute | Details |
+| --- | --- |
+| **Developer** | [@vxprxx](https://instagram.com/vxprxx) |
+| **GitHub** | [retardedmonkeygaming](https://github.com/retardedmonkeygaming) |
+| **Status** | Free & Open Source |
 
-*This project is an independent open-source research effort and is not affiliated, endorsed, or associated with Disney, Avalanche Software, Nintendo, or Sony Interactive Entertainment. All product names, logos, and brands are property of their respective owners.*
+---
 
+> ⚠️ **Disclaimer:** *This is an independent open-source hobbyist project. It is not affiliated, associated, authorized, endorsed by, or in any way officially connected with Disney, Avalanche Software, Sony Interactive Entertainment, or Nintendo.*
+> **NOTE:** *In case you use a Pi 3A+, you will have to use a USB Type A to Type A cable.*
 ```
 
 ```
