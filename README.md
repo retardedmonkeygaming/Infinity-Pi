@@ -18,9 +18,8 @@
 ## 📱 Web UI Preview
 
 <p align="center">
-  <img src="https://github.com/retardedmonkeygaming/Infinity-Pi/blob/94853077e0b1c6ddf8e4a93e08ba8a90bc1ff2e6/Mobile_View.jpeg" />
-  &nbsp; &nbsp; &nbsp; &nbsp;
-  <img src="https://github.com/retardedmonkeygaming/Infinity-Pi/blob/94853077e0b1c6ddf8e4a93e08ba8a90bc1ff2e6/Desktop_App.png" />
+  <img src="https://raw.githubusercontent.com/retardedmonkeygaming/Infinity-Pi/94853077e0b1c6ddf8e4a93e08ba8a90bc1ff2e6/Mobile_View.jpeg" width="220" alt="InfinityPi Mobile Interface" style="vertical-align: middle; margin-right: 30px;" />
+  <img src="https://raw.githubusercontent.com/retardedmonkeygaming/Infinity-Pi/94853077e0b1c6ddf8e4a93e08ba8a90bc1ff2e6/Desktop_App.png" width="520" alt="InfinityPi Desktop Interface" style="vertical-align: middle;" />
 </p>
 ---
 
