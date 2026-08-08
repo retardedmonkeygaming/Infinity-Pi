@@ -85,7 +85,7 @@ class InfinityPi_Emulator:
         script_dir = os.path.dirname(os.path.abspath(__file__))
         self.base_path = os.path.join(script_dir, "bins")
         self.versions = ["1.0", "2.0", "3.0"]
-        self.categories = ["Characters", "Playsets", "PowerDiscs", "Vehicles"]
+        self.categories = ["Characters", "Playsets", "PowerDiscs", "ToyBoxes"]
         
         self.slots = {}
         for i in range(7):
