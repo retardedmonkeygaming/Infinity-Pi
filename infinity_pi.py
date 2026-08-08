@@ -88,7 +88,7 @@ class InfinityPi_Emulator:
         self.base_path = os.path.join(script_dir, "bins")
         self.state_file = os.path.join(script_dir, "state.json")
         self.versions = ["1.0", "2.0", "3.0"]
-        self.categories = ["Characters", "Playsets", "PowerDiscs", "Vehicles"]
+        self.categories = ["Characters", "Playsets", "PowerDiscs", "ToyBoxes"]
         
         # 9 Slots: 0-1 Leads, 2,7,8 Hex Stack, 3-4 P1 Discs, 5-6 P2 Discs
         self.slots = {}
