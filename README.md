@@ -50,7 +50,7 @@
 | **Raspberry Pi Zero** | Supported |
 | **Raspberry Pi Zero W/2W** | Supported |
 | **Raspberry Pi 3B(+)** | Unsupported |
-| **Raspberry Pi 2B** | Unupported |
+| **Raspberry Pi 2B** | Unsupported |
 | **Raspberry Pi 1B(+)** | Unsupported |
 
 ---
@@ -59,7 +59,7 @@
 | Component | Function / Details |
 | :--- | :--- |
 | **Raspberry Pi (Check supported model list)** | Required for their OTG (Gadget Mode) controller. |
-| **USB-C Data Cable** | Connects the Pi's USB port straight into your console. |
+| **USB Data Cable (Depending on Pi Model)** | Connects the Pi's USB port straight into your console. |
 | **External Power (Recommended)** | Power the Pi (those with GPIO) via Pins `2/4` (5V) & Pin `6` (GND) so the USB-C port handles pure data without dropping during console resets. |
 
 ---
