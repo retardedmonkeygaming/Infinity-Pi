@@ -44,39 +44,53 @@
 
 <div>
 
-### 🔌 Supported Raspberry Pi Models
-
-| RPI | Status |
-| :--- | :--- |
-| **Raspberry Pi 4B** | Supported |
-| **Raspberry Pi 5** | Supported |
-| **Raspberry Pi 3A** | Supported |
-| **Raspberry Pi Zero** | Supported |
-| **Raspberry Pi Zero W/2W** | Supported |
-| **Raspberry Pi 3B(+)** | Unsupported |
-| **Raspberry Pi 2B** | Unsupported |
-| **Raspberry Pi 1B(+)** | Unsupported |
-
-</div>
-
-<div>
-
-### 🎮 Supported Consoles
-
-| Console | Status |
-| :--- | :--- |
-| **PlayStation 4** | Supported |
-| **PlayStation 3** | Supported |
-| **Nintendo Wii U** | Supported |
-| **Nintendo Wii** | Supported |
-| **Xbox One / Series X** | Unsupported |
-| **Xbox 360** | Unsupported |
-| **Nintendo Switch** | Unsupported |
-
-</div>
-
-</div>
-
+<table width="100%" style="border: none; background: transparent;">
+  <tr>
+    <td width="50%" valign="top" align="center" style="border: none;">
+      <h3>🔌 Supported Raspberry Pi Models</h3>
+      <br>
+      <table>
+        <thead>
+          <tr>
+            <th>RPI</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td><b>Raspberry Pi 4B</b></td><td>Supported</td></tr>
+          <tr><td><b>Raspberry Pi 5</b></td><td>Supported</td></tr>
+          <tr><td><b>Raspberry Pi 3A</b></td><td>Supported</td></tr>
+          <tr><td><b>Raspberry Pi Zero</b></td><td>Supported</td></tr>
+          <tr><td><b>Raspberry Pi Zero W/2W</b></td><td>Supported</td></tr>
+          <tr><td><b>Raspberry Pi 3B(+)</b></td><td>Unsupported</td></tr>
+          <tr><td><b>Raspberry Pi 2B</b></td><td>Unsupported</td></tr>
+          <tr><td><b>Raspberry Pi 1B(+)</b></td><td>Unsupported</td></tr>
+        </tbody>
+      </table>
+    </td>
+    <td width="50%" valign="top" align="center" style="border: none;">
+      <h3>🎮 Supported Consoles</h3>
+      <br>
+      <table>
+        <thead>
+          <tr>
+            <th>Console</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td><b>PlayStation 4</b></td><td>Supported</td></tr>
+          <tr><td><b>PlayStation 3</b></td><td>Supported</td></tr>
+          <tr><td><b>Nintendo Wii U</b></td><td>Supported</td></tr>
+          <tr><td><b>Nintendo Wii</b></td><td></td>Supported</td></tr>
+          <tr><td><b>Xbox One / Series X</b></td><td>Unsupported</td></tr>
+          <tr><td><b>Xbox 360</b></td><td>Unsupported</td></tr>
+          <tr><td><b>Nintendo Switch</b></td><td>Unsupported</td></tr>
+        </tbody>
+      </table>
+    </td>
+  </tr>
+</table>
 ---
 ## -> Hardware Requirements
 
