@@ -11,7 +11,6 @@
         .main-container { flex: 1; }
         .log-box { height: 160px; background: #000; font-family: monospace; font-size: 10px; color: #22c55e; border: 1px solid #1e293b; border-radius: 12px; overflow-y: auto; }
         
-        /* Fixed height name boxes for 2-line wrapping */
         .figure-card { 
             background: #0f172a; border: 1px solid #1e293b; min-height: 100px; 
             display: flex; align-items: center; justify-content: center; text-align: center;
@@ -28,6 +27,10 @@
         .no-scrollbar::-webkit-scrollbar { display: none; }
         
         footer { background: #0a0f1d; border-top: 1px solid #1e293b; width: 100%; padding: 2.5rem 1.5rem; margin-top: auto; }
+
+        /* Version Button Styles */
+        .v-btn { background: #0f172a; border: 1px solid #1e293b; color: #475569; transition: 0.2s; }
+        .v-btn.active { background: #3b82f6; border-color: #3b82f6; color: white; }
     </style>
 </head>
 <body>
@@ -88,10 +91,19 @@
             </div>
         </div>
 
-        <!-- Library Selection -->
-        <div id="tabs" class="flex gap-2 mb-6 overflow-x-auto no-scrollbar pb-3 border-b border-slate-900">
-            <button onclick="filter('All')" id="btn-All" class="whitespace-nowrap bg-blue-600 px-8 py-2.5 rounded-2xl font-bold text-xs text-white">All Figures</button>
+        <!-- Version and Library Selection -->
+        <h2 class="text-[10px] uppercase font-black text-slate-600 mb-4 tracking-[0.3em] ml-1">Game Version</h2>
+        <div id="version-tabs" class="flex gap-2 mb-6 overflow-x-auto no-scrollbar pb-3 border-b border-slate-900">
+            <button onclick="setVersion('1.0')" id="vbtn-1.0" class="v-btn whitespace-nowrap px-8 py-2.5 rounded-2xl font-bold text-xs active">DI 1.0</button>
+            <button onclick="setVersion('2.0')" id="vbtn-2.0" class="v-btn whitespace-nowrap px-8 py-2.5 rounded-2xl font-bold text-xs">DI 2.0</button>
+            <button onclick="setVersion('3.0')" id="vbtn-3.0" class="v-btn whitespace-nowrap px-8 py-2.5 rounded-2xl font-bold text-xs">DI 3.0</button>
         </div>
+
+        <h2 class="text-[10px] uppercase font-black text-slate-600 mb-4 tracking-[0.3em] ml-1">Category</h2>
+        <div id="tabs" class="flex gap-2 mb-6 overflow-x-auto no-scrollbar pb-3 border-b border-slate-900">
+            <!-- Dynamic categories based on version will appear here -->
+        </div>
+
         <div id="grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7 gap-4 mb-12"></div>
 
         <!-- Debug Console -->
@@ -123,8 +135,9 @@
     <script>
         const socket = io();
         let currentSlot = 0;
+        let currentVersion = "1.0";
+        let currentCategory = "Characters";
         let allFiles = {};
-        let activeFilter = 'All';
 
         socket.on('log_update', d => {
             const l = document.getElementById('logs');
@@ -150,8 +163,48 @@
             currentSlot = id;
         }
 
+        function setVersion(v) {
+            currentVersion = v;
+            document.querySelectorAll('.v-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`vbtn-${v}`).classList.add('active');
+            updateCategoryTabs();
+        }
+
+        function updateCategoryTabs() {
+            const tabs = document.getElementById('tabs');
+            tabs.innerHTML = "";
+            const categories = Object.keys(allFiles[currentVersion] || {});
+            
+            categories.forEach(cat => {
+                const b = document.createElement('button');
+                b.id = `btn-${cat}`;
+                b.className = "bg-slate-900 border border-slate-800 px-8 py-2.5 rounded-2xl font-bold text-xs whitespace-nowrap text-slate-500 hover:text-white transition-all";
+                b.innerText = cat;
+                b.onclick = () => filter(cat);
+                tabs.appendChild(b);
+            });
+
+            // Set default category to first available if current doesn't exist in new version
+            if (categories.length > 0) {
+                filter(categories.includes(currentCategory) ? currentCategory : categories[0]);
+            }
+        }
+
+        function filter(cat) {
+            currentCategory = cat;
+            document.querySelectorAll('#tabs button').forEach(b => {
+                b.classList.remove('bg-blue-600', 'text-white');
+                b.classList.add('bg-slate-900', 'text-slate-500');
+            });
+            const activeBtn = document.getElementById(`btn-${cat}`);
+            if(activeBtn) {
+                activeBtn.classList.remove('bg-slate-900', 'text-slate-500');
+                activeBtn.classList.add('bg-blue-600', 'text-white');
+            }
+            render();
+        }
+
         async function init() {
-            // Load current portal state from Pi for persistence on refresh
             const slotRes = await fetch('/api/slots');
             const slots = await slotRes.json();
             Object.entries(slots).forEach(([id, name]) => {
@@ -159,60 +212,39 @@
                 if(el) el.innerText = name.replace('.bin','');
             });
 
-            // Load binary list
             const res = await fetch('/api/files');
             allFiles = await res.json();
-            const tabs = document.getElementById('tabs');
-            Object.keys(allFiles).forEach(cat => {
-                if(allFiles[cat].length > 0) {
-                    const b = document.createElement('button');
-                    b.id = `btn-${cat}`;
-                    b.className = "bg-slate-900 border border-slate-800 px-8 py-2.5 rounded-2xl font-bold text-xs whitespace-nowrap text-slate-500 ml-2 hover:text-white transition-all";
-                    b.innerText = cat;
-                    b.onclick = () => filter(cat);
-                    tabs.appendChild(b);
-                }
-            });
-            render('All');
+            setVersion('1.0');
         }
 
-        function render(catFilter, search = "") {
-            activeFilter = catFilter;
+        function render(search = "") {
             const grid = document.getElementById('grid');
             grid.innerHTML = "";
             
-            document.querySelectorAll('#tabs button').forEach(b => {
-                b.classList.remove('bg-blue-600', 'text-white');
-                b.classList.add('bg-slate-900', 'text-slate-500');
-            });
-            const activeBtn = document.getElementById(`btn-${catFilter}`);
-            if(activeBtn) {
-                activeBtn.classList.remove('bg-slate-900', 'text-slate-500');
-                activeBtn.classList.add('bg-blue-600', 'text-white');
-            }
-
-            Object.entries(allFiles).forEach(([cat, files]) => {
-                if (catFilter === 'All' || catFilter === cat) {
-                    files.forEach(f => {
-                        const name = f.replace('.bin', '');
-                        if (name.toLowerCase().includes(search.toLowerCase())) {
-                            const d = document.createElement('div');
-                            d.className = "figure-card";
-                            d.innerHTML = `<div class="card-text">${name}</div>`;
-                            d.onclick = () => place(cat, f);
-                            grid.appendChild(d);
-                        }
-                    });
+            const files = allFiles[currentVersion][currentCategory] || [];
+            files.forEach(f => {
+                const name = f.replace('.bin', '');
+                if (name.toLowerCase().includes(search.toLowerCase())) {
+                    const d = document.createElement('div');
+                    d.className = "figure-card";
+                    d.innerHTML = `<div class="card-text">${name}</div>`;
+                    d.onclick = () => place(f);
+                    grid.appendChild(d);
                 }
             });
         }
 
-        async function place(cat, file) {
+        async function place(file) {
             document.getElementById(`name-${currentSlot}`).innerText = file.replace('.bin','');
             await fetch('/api/place', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({slot: currentSlot, category: cat, filename: file})
+                body: JSON.stringify({
+                    slot: currentSlot, 
+                    version: currentVersion, 
+                    category: currentCategory, 
+                    filename: file
+                })
             });
         }
 
@@ -233,8 +265,7 @@
             await fetch('/api/remove_all', { method: 'POST' });
         }
 
-        document.getElementById('search').oninput = e => render(activeFilter, e.target.value);
-        function filter(c) { render(c); }
+        document.getElementById('search').oninput = e => render(e.target.value);
         
         init();
     </script>

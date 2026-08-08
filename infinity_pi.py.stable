@@ -84,20 +84,15 @@ class InfinityPi_Emulator:
         
         script_dir = os.path.dirname(os.path.abspath(__file__))
         self.base_path = os.path.join(script_dir, "bins")
-        self.versions = ["1.0", "2.0", "3.0"]
         self.categories = ["Characters", "Playsets", "PowerDiscs", "Vehicles"]
         
         self.slots = {}
         for i in range(7):
             sid = 0x20 if i in [0,3,4] else 0x30 if i in [1,5,6] else 0x10
-            self.slots[i] = {"name": "Empty", "version": None, "category": None, "uid": b"\x00"*7, "data": None, "sid": sid}
+            self.slots[i] = {"name": "Empty", "uid": b"\x00"*7, "data": None, "sid": sid}
         
-        # Initialize Directory Structure
         if not os.path.exists(self.base_path): os.makedirs(self.base_path, exist_ok=True)
-        for v in self.versions:
-            v_path = os.path.join(self.base_path, v)
-            for c in self.categories:
-                os.makedirs(os.path.join(v_path, c), exist_ok=True)
+        for c in self.categories: os.makedirs(os.path.join(self.base_path, c), exist_ok=True)
 
     def log_to_web(self, tag, data_or_msg):
         if isinstance(data_or_msg, (bytes, bytearray)):
@@ -105,19 +100,6 @@ class InfinityPi_Emulator:
         else:
             msg = f"[{time.strftime('%H:%M:%S')}] [{tag}] {data_or_msg}"
         socketio.emit('log_update', {'msg': msg}, namespace='/')
-
-    def persist_to_disk(self, slot_idx):
-        slot = self.slots[slot_idx]
-        if slot["data"] is None or slot["version"] is None or slot["category"] is None:
-            return
-        
-        file_path = os.path.join(self.base_path, slot["version"], slot["category"], slot["name"])
-        try:
-            with open(file_path, "wb") as f:
-                f.write(slot["data"])
-            self.log_to_web("DISK_WRITE", f"Saved progress to {slot['name']}")
-        except Exception as e:
-            self.log_to_web("DISK_ERROR", str(e))
 
     def usb_engine(self):
         fd = os.open("/dev/hidg0", os.O_RDWR)
@@ -161,16 +143,6 @@ class InfinityPi_Emulator:
                             if order < 7 and self.slots[order]["data"] is not None and file_block < 20:
                                 q_result[4:20] = self.slots[order]["data"][16*file_block : 16*file_block+16]
                             q_result[20] = self.base.generate_checksum(q_result, 20)
-                        elif command == 0xA3: # Data Write (Save progress)
-                            order, block = buf[4], buf[5]
-                            data_to_write = buf[7:23]
-                            file_block = 1 if block == 0 else (block * 4)
-                            q_result[0:4] = [0xaa, 0x02, sequence, 0x00]
-                            if order < 7 and self.slots[order]["data"] is not None and file_block < 20:
-                                start = 16 * file_block
-                                self.slots[order]["data"][start:start+16] = data_to_write
-                                self.persist_to_disk(order)
-                            q_result[4] = self.base.generate_checksum(q_result, 4)
 
                         os.write(fd, q_result)
             except Exception as e:
@@ -189,30 +161,22 @@ def get_slots():
 @app.route('/api/files')
 def get_files():
     res = {}
-    for v in emulator.versions:
-        res[v] = {}
-        for c in emulator.categories:
-            p = os.path.join(emulator.base_path, v, c)
-            res[v][c] = sorted([f for f in os.listdir(p) if f.lower().endswith('.bin')]) if os.path.exists(p) else []
+    for c in emulator.categories:
+        p = os.path.join(emulator.base_path, c)
+        res[c] = sorted(list(set([f for f in os.listdir(p) if f.lower().endswith('.bin')]))) if os.path.exists(p) else []
     return jsonify(res)
 
 @app.route('/api/place', methods=['POST'])
 def web_place():
     d = request.json
     s_idx = int(d['slot'])
-    path = os.path.join(emulator.base_path, d['version'], d['category'], d['filename'])
+    path = os.path.join(emulator.base_path, d['category'], d['filename'])
     try:
         with open(path, "rb") as f:
             raw = bytearray(f.read())
             with emulator.lock:
-                emulator.slots[s_idx].update({
-                    "name": d['filename'], 
-                    "version": d['version'], 
-                    "category": d['category'], 
-                    "uid": raw[0:7], 
-                    "data": raw
-                })
-        emulator.log_to_web("SLOT_UPDATE", f"Placed {d['filename']} ({d['version']}) in Slot {s_idx}")
+                emulator.slots[s_idx].update({"name": d['filename'], "uid": raw[0:7], "data": raw})
+        emulator.log_to_web("SLOT_UPDATE", f"Placed {d['filename']} in Slot {s_idx}")
         return jsonify({"status": "ok"})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
@@ -221,7 +185,7 @@ def web_place():
 def web_remove():
     s_idx = int(request.json['slot'])
     with emulator.lock:
-        emulator.slots[s_idx].update({"name": "Empty", "version": None, "category": None, "uid": b"\x00"*7, "data": None})
+        emulator.slots[s_idx].update({"name": "Empty", "uid": b"\x00"*7, "data": None})
     emulator.log_to_web("SLOT_UPDATE", f"Cleared Slot {s_idx}")
     socketio.emit('slot_update', {'slot': s_idx, 'name': "Empty"})
     return jsonify({"status": "ok"})
@@ -230,9 +194,12 @@ def web_remove():
 def web_remove_all():
     with emulator.lock:
         for i in range(7):
-            emulator.slots[i].update({"name": "Empty", "version": None, "category": None, "uid": b"\x00"*7, "data": None})
+            emulator.slots[i].update({"name": "Empty", "uid": b"\x00"*7, "data": None})
+    
+    # Emit outside the lock for better USB timing performance
     for i in range(7):
         socketio.emit('slot_update', {'slot': i, 'name': "Empty"})
+    
     emulator.log_to_web("SLOT_UPDATE", "ALL SLOTS CLEARED")
     return jsonify({"status": "ok"})
 
