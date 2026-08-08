@@ -88,9 +88,11 @@ class InfinityPi_Emulator:
         self.categories = ["Characters", "Playsets", "PowerDiscs", "ToyBoxes"]
         
         self.slots = {}
-        for i in range(7):
-            sid = 0x20 if i in [0,3,4] else 0x30 if i in [1,5,6] else 0x10
-            self.slots[i] = {"name": "Empty", "version": None, "category": None, "uid": b"\x00"*7, "data": None, "sid": sid}
+        # Hardware SID mapping for 9 slots
+        # P1: 0x20, P2: 0x30, Hex1: 0x10, Hex2: 0x11, Hex3: 0x12, P1 Stack: 0x21-0x22, P2 Stack: 0x31-0x32
+        sid_map = {0: 0x20, 1: 0x30, 2: 0x10, 3: 0x11, 4: 0x12, 5: 0x21, 6: 0x22, 7: 0x31, 8: 0x32}
+        for i in range(9):
+            self.slots[i] = {"name": "Empty", "version": None, "category": None, "uid": b"\x00"*7, "data": None, "sid": sid_map[i]}
         
         # Initialize Directory Structure
         if not os.path.exists(self.base_path): os.makedirs(self.base_path, exist_ok=True)
@@ -142,34 +144,37 @@ class InfinityPi_Emulator:
                             self.base.get_blank_response(sequence, q_result)
                         elif command == 0xA1: # Presence check
                             x = 3
-                            for i in range(7):
+                            for i in range(9):
                                 if self.slots[i]["data"] is not None:
-                                    q_result[x], q_result[x+1] = self.slots[i]["sid"] + i, 0x09
+                                    q_result[x], q_result[x+1] = self.slots[i]["sid"], 0x09
                                     x += 2
                             q_result[0], q_result[1], q_result[2] = 0xaa, x-2, sequence
                             q_result[x] = self.base.generate_checksum(q_result, x)
                         elif command == 0xB4: # UID check
                             order = buf[4]
                             q_result[0:4] = [0xaa, 0x09, sequence, 0x00]
-                            if order < 7 and self.slots[order]["data"] is not None:
-                                q_result[4:11] = self.slots[order]["uid"]
+                            for i in range(9):
+                                if self.slots[i]["sid"] == order and self.slots[i]["data"] is not None:
+                                    q_result[4:11] = self.slots[i]["uid"]
                             q_result[11] = self.base.generate_checksum(q_result, 11)
                         elif command == 0xA2: # Data Read
                             order, block = buf[4], buf[5]
                             file_block = 1 if block == 0 else (block * 4)
                             q_result[0:4] = [0xaa, 0x12, sequence, 0x00]
-                            if order < 7 and self.slots[order]["data"] is not None and file_block < 20:
-                                q_result[4:20] = self.slots[order]["data"][16*file_block : 16*file_block+16]
+                            for i in range(9):
+                                if self.slots[i]["sid"] == order and self.slots[i]["data"] is not None and file_block < 20:
+                                    q_result[4:20] = self.slots[i]["data"][16*file_block : 16*file_block+16]
                             q_result[20] = self.base.generate_checksum(q_result, 20)
                         elif command == 0xA3: # Data Write (Save progress)
                             order, block = buf[4], buf[5]
                             data_to_write = buf[7:23]
                             file_block = 1 if block == 0 else (block * 4)
                             q_result[0:4] = [0xaa, 0x02, sequence, 0x00]
-                            if order < 7 and self.slots[order]["data"] is not None and file_block < 20:
-                                start = 16 * file_block
-                                self.slots[order]["data"][start:start+16] = data_to_write
-                                self.persist_to_disk(order)
+                            for i in range(9):
+                                if self.slots[i]["sid"] == order and self.slots[i]["data"] is not None and file_block < 20:
+                                    start = 16 * file_block
+                                    self.slots[i]["data"][start:start+16] = data_to_write
+                                    self.persist_to_disk(i)
                             q_result[4] = self.base.generate_checksum(q_result, 4)
 
                         os.write(fd, q_result)
@@ -229,9 +234,9 @@ def web_remove():
 @app.route('/api/remove_all', methods=['POST'])
 def web_remove_all():
     with emulator.lock:
-        for i in range(7):
+        for i in range(9):
             emulator.slots[i].update({"name": "Empty", "version": None, "category": None, "uid": b"\x00"*7, "data": None})
-    for i in range(7):
+    for i in range(9):
         socketio.emit('slot_update', {'slot': i, 'name': "Empty"})
     emulator.log_to_web("SLOT_UPDATE", "ALL SLOTS CLEARED")
     return jsonify({"status": "ok"})
