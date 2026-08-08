@@ -29,7 +29,6 @@
             <input type="text" id="search" placeholder="Search library..." class="w-full sm:w-72 bg-slate-900 border border-slate-800 rounded-2xl px-6 py-3 text-sm focus:outline-none">
         </header>
 
-        <!-- ROW 1: PLAYERS -->
         <h2 class="text-[10px] uppercase font-black text-slate-600 mb-4 tracking-widest ml-1">Characters</h2>
         <div class="grid grid-cols-2 gap-4 mb-8">
             <div id="slot-0" onclick="setSlot(0)" class="slot-box p-6 rounded-3xl text-center active-slot">
@@ -44,7 +43,6 @@
             </div>
         </div>
 
-        <!-- ROW 2: HEX ITEMS -->
         <h2 class="text-[10px] uppercase font-black text-slate-600 mb-4 tracking-widest ml-1">Hex Slots</h2>
         <div class="grid grid-cols-3 gap-4 mb-8">
             <div id="slot-2" onclick="setSlot(2)" class="slot-box p-6 rounded-3xl text-center">
@@ -64,29 +62,12 @@
             </div>
         </div>
 
-        <!-- ROW 3: POWER DISCS -->
         <h2 class="text-[10px] uppercase font-black text-slate-600 mb-4 tracking-widest ml-1">Stacked Power Discs</h2>
         <div class="grid grid-cols-4 gap-3 mb-12">
-            <div id="slot-5" onclick="setSlot(5)" class="slot-box p-4 rounded-2xl text-center">
-                <div class="text-[8px] uppercase text-slate-600 font-bold">P1 Disc 1</div>
-                <div id="name-5" class="text-xs font-bold text-slate-400 truncate">Empty</div>
-                <button onclick="event.stopPropagation(); clearSlot(5)" class="absolute top-2 right-2 text-slate-800 text-[10px]">✕</button>
-            </div>
-            <div id="slot-6" onclick="setSlot(6)" class="slot-box p-4 rounded-2xl text-center">
-                <div class="text-[8px] uppercase text-slate-600 font-bold">P1 Disc 2</div>
-                <div id="name-6" class="text-xs font-bold text-slate-400 truncate">Empty</div>
-                <button onclick="event.stopPropagation(); clearSlot(6)" class="absolute top-2 right-2 text-slate-800 text-[10px]">✕</button>
-            </div>
-            <div id="slot-7" onclick="setSlot(7)" class="slot-box p-4 rounded-2xl text-center">
-                <div class="text-[8px] uppercase text-slate-600 font-bold">P2 Disc 1</div>
-                <div id="name-7" class="text-xs font-bold text-slate-400 truncate">Empty</div>
-                <button onclick="event.stopPropagation(); clearSlot(7)" class="absolute top-2 right-2 text-slate-800 text-[10px]">✕</button>
-            </div>
-            <div id="slot-8" onclick="setSlot(8)" class="slot-box p-4 rounded-2xl text-center">
-                <div class="text-[8px] uppercase text-slate-600 font-bold">P2 Disc 2</div>
-                <div id="name-8" class="text-xs font-bold text-slate-400 truncate">Empty</div>
-                <button onclick="event.stopPropagation(); clearSlot(8)" class="absolute top-2 right-2 text-slate-800 text-[10px]">✕</button>
-            </div>
+            <div id="slot-5" onclick="setSlot(5)" class="slot-box p-4 rounded-2xl text-center"><div class="text-[8px] uppercase text-slate-600 font-bold">P1 D1</div><div id="name-5" class="text-xs font-bold text-slate-400 truncate">Empty</div><button onclick="event.stopPropagation(); clearSlot(5)" class="absolute top-2 right-2 text-slate-800 text-[10px]">✕</button></div>
+            <div id="slot-6" onclick="setSlot(6)" class="slot-box p-4 rounded-2xl text-center"><div class="text-[8px] uppercase text-slate-600 font-bold">P1 D2</div><div id="name-6" class="text-xs font-bold text-slate-400 truncate">Empty</div><button onclick="event.stopPropagation(); clearSlot(6)" class="absolute top-2 right-2 text-slate-800 text-[10px]">✕</button></div>
+            <div id="slot-7" onclick="setSlot(7)" class="slot-box p-4 rounded-2xl text-center"><div class="text-[8px] uppercase text-slate-600 font-bold">P2 D1</div><div id="name-7" class="text-xs font-bold text-slate-400 truncate">Empty</div><button onclick="event.stopPropagation(); clearSlot(7)" class="absolute top-2 right-2 text-slate-800 text-[10px]">✕</button></div>
+            <div id="slot-8" onclick="setSlot(8)" class="slot-box p-4 rounded-2xl text-center"><div class="text-[8px] uppercase text-slate-600 font-bold">P2 D2</div><div id="name-8" class="text-xs font-bold text-slate-400 truncate">Empty</div><button onclick="event.stopPropagation(); clearSlot(8)" class="absolute top-2 right-2 text-slate-800 text-[10px]">✕</button></div>
         </div>
 
         <div id="version-tabs" class="flex gap-2 mb-6 border-b border-slate-900 pb-3">
@@ -97,24 +78,15 @@
         <div id="tabs" class="flex gap-2 mb-6 border-b border-slate-900 pb-3 overflow-x-auto no-scrollbar"></div>
         <div id="grid" class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-4 mb-12"></div>
         
-        <!-- Log System with Switch -->
         <div class="flex justify-between items-center mb-2">
-            <h3 class="text-[10px] uppercase font-black text-slate-700 tracking-widest">System Logs</h3>
+            <h3 class="text-[10px] uppercase font-black text-slate-700 tracking-widest">Logs</h3>
             <div class="flex gap-2">
-                <button id="log-slot" onclick="setLogMode('SLOT')" class="bg-blue-600 text-white text-[9px] px-3 py-1 rounded-lg font-bold">Slot Logs</button>
-                <button id="log-auth" onclick="setLogMode('AUTH')" class="bg-slate-900 text-slate-500 text-[9px] px-3 py-1 rounded-lg font-bold">Auth Logs</button>
+                <button id="l-slot" onclick="setLog('SLOT')" class="bg-blue-600 text-white text-[9px] px-3 py-1 rounded-lg">Slot</button>
+                <button id="l-auth" onclick="setLog('AUTH')" class="bg-slate-900 text-slate-500 text-[9px] px-3 py-1 rounded-lg">Auth</button>
             </div>
         </div>
         <div class="log-box p-6" id="logs"></div>
     </div>
-
-    <footer>
-        <div class="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8 items-center text-center md:text-left">
-            <div><p class="text-[10px] font-black text-slate-600 uppercase tracking-widest">Contact</p><p class="text-sm font-bold text-white">vxprxx</p></div>
-            <div class="flex flex-col items-center gap-3"><p class="text-[9px] font-black text-slate-700 uppercase tracking-widest">FREE FOR ALL</p></div>
-            <div class="text-[9px] font-bold md:text-right text-slate-500 uppercase space-y-1"><p>RPCS3 Emulation</p><p>AI-Assisted Hobbyist Project</p></div>
-        </div>
-    </footer>
 
     <script>
         const socket = io();
@@ -128,30 +100,23 @@
 
         socket.on('slot_update', d => { const el = document.getElementById(`name-${d.slot}`); if(el) el.innerText = d.name.replace('.bin',''); });
 
-        function setSlot(id) {
-            document.querySelectorAll('.slot-box').forEach(el => el.classList.remove('active-slot'));
-            document.getElementById(`slot-${id}`).classList.add('active-slot'); currentSlot = id;
-        }
-
-        async function setLogMode(mode) {
-            document.getElementById('logs').innerHTML = ""; // Clear logs on switch
-            const isAuth = mode === 'AUTH';
-            document.getElementById('log-auth').className = isAuth ? "bg-blue-600 text-white text-[9px] px-3 py-1 rounded-lg font-bold" : "bg-slate-900 text-slate-500 text-[9px] px-3 py-1 rounded-lg font-bold";
-            document.getElementById('log-slot').className = !isAuth ? "bg-blue-600 text-white text-[9px] px-3 py-1 rounded-lg font-bold" : "bg-slate-900 text-slate-500 text-[9px] px-3 py-1 rounded-lg font-bold";
+        function setSlot(id) { document.querySelectorAll('.slot-box').forEach(el => el.classList.remove('active-slot')); document.getElementById(`slot-${id}`).classList.add('active-slot'); currentSlot = id; }
+        
+        async function setLog(mode) {
+            document.getElementById('logs').innerHTML = "";
+            document.getElementById('l-slot').className = mode === 'SLOT' ? "bg-blue-600 text-white text-[9px] px-3 py-1 rounded-lg" : "bg-slate-900 text-slate-500 text-[9px] px-3 py-1 rounded-lg";
+            document.getElementById('l-auth').className = mode === 'AUTH' ? "bg-blue-600 text-white text-[9px] px-3 py-1 rounded-lg" : "bg-slate-900 text-slate-500 text-[9px] px-3 py-1 rounded-lg";
             await fetch('/api/log_mode', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({mode: mode}) });
         }
 
-        function setVersion(v) {
-            currentVersion = v; document.querySelectorAll('.v-btn').forEach(btn => btn.classList.remove('active'));
-            document.getElementById(`vbtn-${v}`).classList.add('active'); updateCategoryTabs();
-        }
+        function setVersion(v) { currentVersion = v; document.querySelectorAll('.v-btn').forEach(btn => btn.classList.remove('active')); document.getElementById(`vbtn-${v}`).classList.add('active'); updateCategoryTabs(); }
 
         function updateCategoryTabs() {
             const tabs = document.getElementById('tabs'); tabs.innerHTML = "";
             const categories = Object.keys(allFiles[currentVersion] || {});
             categories.forEach(cat => {
                 const b = document.createElement('button'); b.id = `btn-${cat}`;
-                b.className = "bg-slate-900 border border-slate-800 px-8 py-2.5 rounded-2xl font-bold text-xs text-slate-500 whitespace-nowrap mr-2";
+                b.className = "bg-slate-900 border border-slate-800 px-8 py-2.5 rounded-2xl font-bold text-xs text-slate-500 mr-2";
                 b.innerText = cat; b.onclick = () => filter(cat); tabs.appendChild(b);
             });
             if (categories.length > 0) filter(categories.includes(currentCategory) ? currentCategory : categories[0]);
@@ -181,15 +146,9 @@
             });
         }
 
-        async function place(file) {
-            document.getElementById(`name-${currentSlot}`).innerText = file.replace('.bin','');
-            await fetch('/api/place', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ slot: currentSlot, version: currentVersion, category: currentCategory, filename: file }) });
-        }
-
-        async function clearSlot(id) { document.getElementById(`name-${id}`).innerText = "Empty"; await fetch('/api/remove', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({slot: id}) }); }
-
-        async function removeAll() { for(let i=0; i<9; i++) document.getElementById(`name-${i}`).innerText = "Empty"; await fetch('/api/remove_all', { method: 'POST' }); }
-
+        async function place(file) { await fetch('/api/place', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ slot: currentSlot, version: currentVersion, category: currentCategory, filename: file }) }); }
+        async function clearSlot(id) { await fetch('/api/remove', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({slot: id}) }); }
+        async function removeAll() { await fetch('/api/remove_all', { method: 'POST' }); }
         document.getElementById('search').oninput = e => render(e.target.value);
         init();
     </script>
