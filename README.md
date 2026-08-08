@@ -13,7 +13,7 @@
 
 ---
 
-**InfinityPi** turns a Raspberry Pi into a full-fledged **Disney Infinity Base** emulator. Built to work seamlessly with **PS3, PS4, Wii, and Wii U**, it ports the exact authentication math from the [RPCS3 Infinity Base Emulator](https://rpcs3.net/) to talk to your console directly over USB. You control your entire base instantly from a mobile-friendly web app on your phone or PC.
+**InfinityPi** turns a Raspberry Pi into a full-fledged **Disney Infinity Base** emulator. Built to work seamlessly with **PS3, PS4, Wii, and Wii U**, it ports the exact authentication math from the [RPCS3 Infinity Base Emulator](https://rpcs3.net/) to talk to your console directly over USB. You control your entire base instantly from a mobile-friendly web app on your phone or PC. It is recommended to create a startup service as well!
 
 ---
 
@@ -41,9 +41,9 @@
 | **Raspberry Pi 3A** | Supported |
 | **Raspberry Pi Zero** | Supported |
 | **Raspberry Pi Zero W/2W** | Supported |
-| **Raspberry Pi 3B(+)* | Unsupported |
+| **Raspberry Pi 3B(+)** | Unsupported |
 | **Raspberry Pi 2B** | Unupported |
-| **Raspberry Pi 1B(+)* | Unsupported |
+| **Raspberry Pi 1B(+)** | Unsupported |
 
 ---
 ## -> Hardware Requirements
@@ -128,6 +128,18 @@ sudo python3 infinity_pi.py
 
 ```
 
+---
+
+### 5. Automated Startup Service (Optional but recommended.)
+
+To have **InfinityPi** start automatically every time your Pi boots up, run the setup script:
+
+```bash
+chmod +x create-startup-service.sh
+sudo ./create-startup-service.sh
+
+```
+
 > 🌐 **Open the Web UI:** Pull up a browser on your phone or PC and head to:
 > `http://<your-pi-ip>`
 
@@ -152,6 +164,7 @@ sudo python3 infinity_pi.py
 ---
 
 > ⚠️ **Disclaimer:** *This is an independent open-source hobbyist project. It is not affiliated, associated, authorized, endorsed by, or in any way officially connected with Disney, Avalanche Software, Sony Interactive Entertainment, or Nintendo.*
+
 > **NOTE:** *In case you use a Pi 3A+, you will have to use a USB Type A to Type A cable.*
 ```
 
