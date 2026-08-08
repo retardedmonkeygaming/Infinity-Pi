@@ -57,7 +57,7 @@
 | **Raspberry Pi 2B** | Unsupported |
 | **Raspberry Pi 1B(+)** | Unsupported |
 
-    </td>
+  </td>
     <td width="50%" valign="top">
 
 ### 🎮 Supported Consoles
@@ -72,7 +72,7 @@
 | **Xbox 360** | Unsupported |
 | **Nintendo Switch** | Unsupported |
 
-    </td>
+  </td>
   </tr>
 </table>
 ---
