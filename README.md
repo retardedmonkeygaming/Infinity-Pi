@@ -44,7 +44,7 @@
   <tr>
     <td width="50%" valign="top">
 
-### 🔌 Supported Raspberry Pi Models
+### -> Supported Raspberry Pi Models
 
 | RPI | Status |
 | :--- | :--- |
@@ -60,7 +60,7 @@
   </td>
     <td width="50%" valign="top">
 
-### 🎮 Supported Consoles
+### -> Supported Consoles
 
 | Console | Status |
 | :--- | :--- |
