@@ -1,4 +1,3 @@
-```markdown
 # 🌌 InfinityPi
 
 <p align="center">
